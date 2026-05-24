@@ -14,11 +14,13 @@ interface BioTrackRepository {
     
     // Compound
     fun getCompoundsForSubstance(substanceId: String): Flow<List<Compound>>
+    fun getAllCompounds(): Flow<List<Compound>>
     suspend fun saveCompound(compound: Compound)
     suspend fun deleteCompound(id: String)
     
     // Variant
     fun getVariantsForSubstance(substanceId: String): Flow<List<Variant>>
+    fun getAllVariants(): Flow<List<Variant>>
     suspend fun saveVariant(variant: Variant)
     suspend fun deleteVariant(id: String)
 

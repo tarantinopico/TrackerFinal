@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VariantDao {
+    @Query("SELECT * FROM variants")
+    fun getAllVariants(): Flow<List<VariantEntity>>
+
     @Query("SELECT * FROM variants WHERE substanceId = :substanceId")
     fun getVariantsForSubstance(substanceId: String): Flow<List<VariantEntity>>
 

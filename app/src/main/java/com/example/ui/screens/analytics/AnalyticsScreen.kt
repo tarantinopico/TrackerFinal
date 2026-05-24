@@ -1,74 +1,93 @@
 package com.example.ui.screens.analytics
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.domain.model.Dose
+import com.example.ui.components.SectionHeader
+import com.example.ui.screens.analytics.components.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AnalyticsScreen(logs: List<Dose>) {
+fun AnalyticsScreen(viewModel: AnalyticsViewModel) {
+    val state by viewModel.state.collectAsState()
+    val settings = state.settings
+    val privacyMode = settings?.privacyMode ?: false
+    val financeMode = settings?.financeMode ?: true
+    val hideFinance = settings?.hideFinanceMode ?: false
+    
+    val shouldHideFinance = hideFinance || privacyMode || !financeMode
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Analytics & History") }) }
+        topBar = {
+            if (state.detailSubstanceId != null) {
+                TopAppBar(
+                    title = { Text("Substance Detail") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.viewSubstanceDetail(null) }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Recent Usage Frequency", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Simple Canvas bar chart
-            Canvas(modifier = Modifier.fillMaxWidth().height(120.dp)) {
-                val barWidth = 30f
-                val spacing = size.width / 10
+            if (state.detailSubstanceId == null) {
+                SectionHeader(title = "Analytics", icon = Icons.Default.Analytics)
                 
-                // Draw random bars to simulate chart
-                for (i in 0..6) {
-                    val h = (Math.random() * size.height).toFloat()
-                    drawLine(
-                        color = Color(0xFF00E676),
-                        start = Offset(i * spacing + spacing, size.height),
-                        end = Offset(i * spacing + spacing, size.height - h),
-                        strokeWidth = barWidth,
-                        cap = StrokeCap.Round
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Text("Calendar History", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Mock Calendar Grid
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(31) { day ->
-                    val hasLog = Math.random() > 0.7
-                    Box(
-                        modifier = Modifier
-                            .aspectRatio(1f)
-                            .clip(CircleShape)
-                            .background(if (hasLog) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("${day + 1}", style = MaterialTheme.typography.bodySmall)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val sections = AnalyticsSection.values().toList().filter { 
+                        if (it == AnalyticsSection.FINANCE) !shouldHideFinance else true 
                     }
+                    items(sections) { section ->
+                        FilterChip(
+                            selected = state.selectedSubsubsection == section,
+                            onClick = { viewModel.selectSection(section) },
+                            label = { Text(section.name.replace("_", " ")) }
+                        )
+                    }
+                }
+                
+                Crossfade(targetState = state.selectedSubsubsection, label = "AnalyticsSection") { section ->
+                    when (section) {
+                        AnalyticsSection.SUMMARY -> AnalyticsSummary(state, privacyMode)
+                        AnalyticsSection.SUBSTANCES -> SubstanceAnalyticsList(state, privacyMode, onSubstanceClick = { viewModel.viewSubstanceDetail(it) })
+                        AnalyticsSection.CATEGORIES -> CategoryAnalytics(state, privacyMode)
+                        AnalyticsSection.TIMING -> TimingAnalytics(state, privacyMode)
+                        AnalyticsSection.HISTORY_CALENDAR -> HistoryCalendarView(state, privacyMode)
+                        AnalyticsSection.FINANCE -> FinanceAnalyticsView(state, privacyMode, shouldHideFinance)
+                    }
+                }
+            } else {
+                val detailSubstance = state.substances.find { it.id == state.detailSubstanceId }
+                if (detailSubstance != null) {
+                    SubstanceAnalyticsDetail(
+                        substance = detailSubstance,
+                        state = state,
+                        privacyMode = privacyMode,
+                        shouldHideFinance = shouldHideFinance
+                    )
+                } else {
+                    Text("Substance not found")
                 }
             }
         }

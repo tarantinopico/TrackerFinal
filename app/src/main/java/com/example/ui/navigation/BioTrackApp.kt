@@ -85,7 +85,10 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
                 )
             }
             composable(Routes.ANALYTICS) {
-                com.example.ui.screens.analytics.AnalyticsScreen(logs = logs)
+                val analyticsViewModel: com.example.ui.screens.analytics.AnalyticsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.ui.screens.analytics.AnalyticsViewModelFactory(viewModel.repository)
+                )
+                com.example.ui.screens.analytics.AnalyticsScreen(viewModel = analyticsViewModel)
             }
             composable(Routes.SETTINGS) {
                com.example.ui.screens.settings.SettingsScreen(

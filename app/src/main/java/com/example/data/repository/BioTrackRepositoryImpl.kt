@@ -35,6 +35,9 @@ class BioTrackRepositoryImpl(
     override fun getCompoundsForSubstance(substanceId: String): Flow<List<Compound>> =
         db.compoundDao().getCompoundsForSubstance(substanceId).map { list -> list.map { it.toDomain() } }
 
+    override fun getAllCompounds(): Flow<List<Compound>> =
+        db.compoundDao().getAllCompounds().map { list -> list.map { it.toDomain() } }
+
     override suspend fun saveCompound(compound: Compound) {
         db.compoundDao().insertCompound(compound.toEntity())
     }
@@ -45,6 +48,9 @@ class BioTrackRepositoryImpl(
 
     override fun getVariantsForSubstance(substanceId: String): Flow<List<Variant>> =
         db.variantDao().getVariantsForSubstance(substanceId).map { list -> list.map { it.toDomain() } }
+
+    override fun getAllVariants(): Flow<List<Variant>> =
+        db.variantDao().getAllVariants().map { list -> list.map { it.toDomain() } }
 
     override suspend fun saveVariant(variant: Variant) {
         db.variantDao().insertVariant(variant.toEntity())

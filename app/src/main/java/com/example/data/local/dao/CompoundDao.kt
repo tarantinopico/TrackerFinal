@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CompoundDao {
+    @Query("SELECT * FROM compounds")
+    fun getAllCompounds(): Flow<List<CompoundEntity>>
+
     @Query("SELECT * FROM compounds WHERE substanceId = :substanceId")
     fun getCompoundsForSubstance(substanceId: String): Flow<List<CompoundEntity>>
 
