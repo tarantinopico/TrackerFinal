@@ -63,15 +63,17 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
                 )
             }
             composable(Routes.LOGGING) {
-                com.example.ui.screens.log.LogScreen(
-                    substances = substances,
-                    onSave = { id, amount, unit, notes, cost ->
-                        viewModel.addLog(id, amount, unit, notes, cost)
+                val loggerViewModel: com.example.ui.screens.logger.LoggerViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.ui.screens.logger.LoggerViewModelFactory(viewModel.repository)
+                )
+                com.example.ui.screens.logger.LoggerScreen(
+                    viewModel = loggerViewModel,
+                    hideFinanceMode = settings.privacyMode || !settings.financeMode,
+                    onSaveSuccess = { 
                         navController.navigate(Routes.DASHBOARD) {
                             popUpTo(Routes.DASHBOARD) { inclusive = true }
                         }
-                    },
-                    onBack = { navController.popBackStack() }
+                    }
                 )
             }
             composable(Routes.LAB) {
