@@ -1,0 +1,6 @@
+{
+  "name": "BioTrack",
+  "description": "Offline substance use tracker with privacy mode and advanced analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
