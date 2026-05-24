@@ -77,6 +77,7 @@ fun SubstanceDetailScreen(
 @Composable
 fun OverviewTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Unit, onDeleteDose: (String) -> Unit) {
     val substance = state.substance ?: return
+    val a = state.analytics
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -99,20 +100,26 @@ fun OverviewTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Uni
         }
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard("Doses", state.periodDoses.toString(), Modifier.weight(1f))
-            MetricCard("Cons.", "${String.format("%.1f", state.periodConsumption)} ${state.substance?.defaultUnit ?: ""}", Modifier.weight(1f))
-            MetricCard("Cost", String.format("$%.2f", state.periodCost), Modifier.weight(1f))
+            MetricCard("Doses", a.periodDoses.toString(), Modifier.weight(1f))
+            MetricCard("Cons.", "${String.format("%.1f", a.periodConsumption)} ${state.substance?.defaultUnit ?: ""}", Modifier.weight(1f))
+            MetricCard("Cost", String.format("$%.2f", a.periodCost), Modifier.weight(1f))
         }
 
         SimpleLineChartCard(
-            title = "Consumption Trend (${state.substance?.defaultUnit ?: ""})",
-            data = state.consumptionTrend,
+            title = "Raw Consumption Trend (${state.substance?.defaultUnit ?: ""})",
+            data = a.rawConsumptionTrend,
             color = MaterialTheme.colorScheme.primary
         )
 
         SimpleLineChartCard(
+            title = "Active Consumption Trend (mg)",
+            data = a.activeConsumptionTrend,
+            color = MaterialTheme.colorScheme.secondary
+        )
+
+        SimpleLineChartCard(
             title = "Spend Trend ($)",
-            data = state.spendTrend,
+            data = a.spendTrend,
             color = MaterialTheme.colorScheme.tertiary
         )
 
@@ -174,9 +181,9 @@ fun OverviewTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Uni
         Spacer(modifier = Modifier.height(16.dp))
         Text("Lifetime Metrics", style = MaterialTheme.typography.titleLarge)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard("Total Doses", state.totalDoses.toString(), Modifier.weight(1f))
-            MetricCard("Avg / Day", String.format("%.1f", state.avgPerDay), Modifier.weight(1f))
-            MetricCard("Total Cost", String.format("$%.2f", state.totalCost), Modifier.weight(1f))
+            MetricCard("Total Doses", a.totalDoses.toString(), Modifier.weight(1f))
+            MetricCard("Avg / Day", String.format("%.1f", a.avgPerDay), Modifier.weight(1f))
+            MetricCard("Total Cost", String.format("$%.2f", a.totalCost), Modifier.weight(1f))
         }
     }
 }
@@ -242,6 +249,7 @@ fun CompositionTab(state: SubstanceDetailState) {
 
 @Composable
 fun AnalyticsTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Unit) {
+    val a = state.analytics
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -264,31 +272,19 @@ fun AnalyticsTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Un
         }
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard("Period Doses", state.periodDoses.toString(), Modifier.weight(1f))
-            MetricCard("Period Cons.", "${String.format("%.1f", state.periodConsumption)} ${state.substance?.defaultUnit ?: ""}", Modifier.weight(1f))
-            MetricCard("Period Cost", String.format("$%.2f", state.periodCost), Modifier.weight(1f))
+            MetricCard("Period Doses", a.periodDoses.toString(), Modifier.weight(1f))
+            MetricCard("Period Cons.", "${String.format("%.1f", a.periodConsumption)} ${state.substance?.defaultUnit ?: ""}", Modifier.weight(1f))
+            MetricCard("Period Cost", String.format("$%.2f", a.periodCost), Modifier.weight(1f))
         }
 
-        SimpleLineChartCard(
-            title = "Consumption Trend (${state.substance?.defaultUnit ?: ""})",
-            data = state.consumptionTrend,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        SimpleLineChartCard(
-            title = "Spend Trend ($)",
-            data = state.spendTrend,
-            color = MaterialTheme.colorScheme.tertiary
-        )
-
-        if (state.kineticLines.isNotEmpty()) {
+        if (a.activeCompoundLines.isNotEmpty()) {
             GlassCard {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Pharmacokinetics (48h)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Compound Load (48h)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     Box(modifier = Modifier.height(200.dp).fillMaxWidth()) {
                         com.example.ui.screens.dashboard.components.KineticGraph(
-                            lines = state.kineticLines,
+                            lines = a.activeCompoundLines,
                             mode = com.example.ui.screens.dashboard.GraphMode.CONCENTRATION,
                             onModeToggle = {}
                         )
@@ -297,32 +293,44 @@ fun AnalyticsTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Un
             }
         }
         
+        SimpleLineChartCard(
+            title = "Tolerance Trend (3-Day SMA)",
+            data = a.toleranceTrend,
+            color = MaterialTheme.colorScheme.error
+        )
+        
+        SimpleBarChart(
+            title = "Dose Size Distribution",
+            data = a.doseHistogram,
+            colorList = listOf(MaterialTheme.colorScheme.tertiary)
+        )
+        
         SimpleBarChart(
             title = "Variant Usage",
-            data = state.variantUsage,
+            data = a.variantUsage,
             colorList = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.tertiary)
         )
         
         SimpleBarChart(
             title = "Route of Administration",
-            data = state.roaUsage,
+            data = a.roaUsage,
             colorList = listOf(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.primaryContainer)
         )
         
         SimpleBarChart(
             title = "Compound Contribution (${state.substance?.defaultUnit ?: ""})",
-            data = state.compoundContribution,
+            data = a.compoundContribution,
             colorList = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)
         )
         
         SimpleBarChart(
             title = "Day of Week Distribution",
-            data = state.dayOfWeekDist
+            data = a.dayOfWeekDist
         )
         
         SimpleBarChart(
             title = "Circadian Rhythm (Hour of Day)",
-            data = state.hourOfDayDist,
+            data = a.hourOfDayDist,
             colorList = listOf(MaterialTheme.colorScheme.secondary)
         )
     }
