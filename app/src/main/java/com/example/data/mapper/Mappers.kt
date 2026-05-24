@@ -7,13 +7,13 @@ import com.example.data.local.db.Converters
 fun SubstanceEntity.toDomain() = Substance(
     id = id, name = name, alias = alias,
     category = try { SubstanceCategory.valueOf(category) } catch (e: Exception) { SubstanceCategory.OTHER },
-    iconKey = iconKey, defaultUnit = defaultUnit, active = active, notes = notes,
+    iconKey = iconKey, colorHex = colorHex, defaultUnit = defaultUnit, active = active, notes = notes,
     archivedAt = archivedAt, createdAt = createdAt, updatedAt = updatedAt
 )
 
 fun Substance.toEntity() = SubstanceEntity(
     id = id, name = name, alias = alias, category = category.name, iconKey = iconKey,
-    defaultUnit = defaultUnit, active = active, notes = notes, archivedAt = archivedAt,
+    colorHex = colorHex, defaultUnit = defaultUnit, active = active, notes = notes, archivedAt = archivedAt,
     createdAt = createdAt, updatedAt = updatedAt
 )
 

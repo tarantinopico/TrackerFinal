@@ -11,12 +11,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.domain.model.Variant
+import com.example.domain.model.Compound
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun VariantEditorSheet(
     variant: Variant,
     isNew: Boolean,
+    availableCompounds: List<Compound>,
     onUpdate: (Variant) -> Unit,
     onSave: () -> Unit,
     onDismissRequest: () -> Unit,
@@ -87,6 +90,34 @@ fun VariantEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             )
             
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Text("Compound Ratios (%)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Define the concentration of each compound in this variant.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            
+            if (availableCompounds.isEmpty()) {
+                Text("No compounds defined for this substance yet.", fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+            } else {
+                availableCompounds.forEach { cmp ->
+                    val currentRatio = (variant.ratio[cmp.id] ?: 0f) * 100f
+                    Column {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(cmp.name)
+                            Text("${currentRatio.roundToInt()} %")
+                        }
+                        Slider(
+                            value = currentRatio,
+                            onValueChange = { pct ->
+                                val newRatioMap = variant.ratio.toMutableMap()
+                                newRatioMap[cmp.id] = pct / 100f
+                                onUpdate(variant.copy(ratio = newRatioMap))
+                            },
+                            valueRange = 0f..100f,
+                            steps = 100
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
             
             Button(

@@ -97,6 +97,10 @@ class LoggerViewModel(
         _state.update { it.copy(manualPrice = price) }
     }
     
+    fun updateTimestamp(time: Long) {
+        _state.update { it.copy(timestamp = time) }
+    }
+    
     fun updateNotes(notes: String) {
         _state.update { it.copy(notes = notes) }
     }

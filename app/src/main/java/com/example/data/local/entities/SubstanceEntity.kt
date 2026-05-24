@@ -17,6 +17,7 @@ data class SubstanceEntity(
     val alias: String,
     val category: String,
     val iconKey: String,
+    val colorHex: String,
     val defaultUnit: String,
     val active: Boolean,
     val notes: String,

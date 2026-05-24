@@ -16,14 +16,21 @@ enum class GraphMode {
 
 data class KineticPoint(val timeMs: Long, val value: Float)
 
+data class KineticLine(
+    val substanceId: String,
+    val name: String,
+    val colorHex: String,
+    val points: List<KineticPoint>
+)
+
 data class DashboardState(
-    val systemLoad: Float = 0f,
     val todayDoseCount: Int = 0,
     val todaySpend: Float = 0f,
     val activeSubstancesCount: Int = 0,
     val spendTrend7d: Float = 0f,
     val recentLogs: List<Pair<Dose, Substance>> = emptyList(),
-    val graphPoints: List<KineticPoint> = emptyList(),
+    val kineticLines: List<KineticLine> = emptyList(),
+    val aggregatedPoints: List<KineticPoint> = emptyList(),
     val graphMode: GraphMode = GraphMode.INFLUENCE,
     val isWarningHighLoad: Boolean = false
 )
@@ -41,10 +48,11 @@ class DashboardViewModel(
         viewModelScope.launch {
             combine(
                 repository.getAllDoses(),
-                repository.getActiveSubstances(),
+                repository.getAllSubstances(),
+                repository.getAllCompounds(),
                 graphModeFlow
-            ) { doses, substances, mode ->
-                calculateState(doses, substances, mode)
+            ) { doses, substances, compounds, mode ->
+                calculateState(doses, substances, compounds, mode)
             }.flowOn(Dispatchers.Default)
              .collect { newState -> _state.value = newState }
         }
@@ -54,7 +62,12 @@ class DashboardViewModel(
         graphModeFlow.value = if (graphModeFlow.value == GraphMode.INFLUENCE) GraphMode.CONCENTRATION else GraphMode.INFLUENCE
     }
 
-    private fun calculateState(doses: List<Dose>, substances: List<Substance>, mode: GraphMode): DashboardState {
+    private fun calculateState(
+        doses: List<Dose>, 
+        substances: List<Substance>, 
+        compounds: List<Compound>,
+        mode: GraphMode
+    ): DashboardState {
         val now = System.currentTimeMillis()
         val startOfDay = getStartOfDay(now)
         val startOf7d = startOfDay - (7 * 24 * 60 * 60 * 1000L)
@@ -69,46 +82,69 @@ class DashboardViewModel(
         val twelveHours = 12 * 60 * 60 * 1000L
         val startTime = now - twelveHours
         val endTime = now + twelveHours
-        val stepMs = 30 * 60 * 1000L
+        val stepMs = 15 * 60 * 1000L
         
         val substanceMap = substances.associateBy { it.id }
-        val points = mutableListOf<KineticPoint>()
+        // For accurate calculation, we'd need variants to know the ratio.
+        // Assuming doses mostly don't store variant directly unless they do.
+        // We will default to a 1:1 ratio for simplicity if variant info isn't available.
+        val compoundMap = compounds.groupBy { it.substanceId }
         
-        for (time in startTime..endTime step stepMs) {
-            var valueAtTime = 0f
-            for (dose in doses) {
-                if (dose.timestamp > time || time - dose.timestamp > 48 * 60 * 60 * 1000L) continue 
-                val sub = substanceMap[dose.substanceId]
-                val focus = calculateConcentration(dose, sub, time)
-                valueAtTime += if (mode == GraphMode.INFLUENCE) focus * getInfluenceFactor(sub) else focus
+        val activeDoses = doses.filter { it.timestamp > startTime - 48 * 60 * 60 * 1000L && it.timestamp <= endTime }
+        val lines = mutableListOf<KineticLine>()
+        val aggPoints = mutableListOf<KineticPoint>()
+        
+        val activeSubDoses = activeDoses.groupBy { it.substanceId }
+        
+        for ((subId, subDoses) in activeSubDoses) {
+            val sub = substanceMap[subId] ?: continue
+            val subCompounds = compoundMap[subId] ?: emptyList()
+            
+            val pts = mutableListOf<KineticPoint>()
+            for (time in startTime..endTime step stepMs) {
+                var valueAtTime = 0f
+                for (dose in subDoses) {
+                    if (dose.timestamp > time || time - dose.timestamp > 48 * 60 * 60 * 1000L) continue 
+                    val focus = calculateDoseConcentration(dose, sub, subCompounds, time)
+                    valueAtTime += if (mode == GraphMode.INFLUENCE) focus * getInfluenceFactor(sub) else focus
+                }
+                pts.add(KineticPoint(time, valueAtTime))
             }
-            points.add(KineticPoint(time, valueAtTime))
+            if (pts.any { it.value > 0.01f }) {
+                lines.add(KineticLine(
+                    substanceId = subId,
+                    name = sub.name,
+                    colorHex = sub.colorHex,
+                    points = pts
+                ))
+            }
         }
         
-        var exactLoad = 0f
-        for (dose in doses) {
-            if (dose.timestamp > now || now - dose.timestamp > 48 * 60 * 60 * 1000L) continue
-            val sub = substanceMap[dose.substanceId]
-            val conc = calculateConcentration(dose, sub, now)
-            exactLoad += if (mode == GraphMode.INFLUENCE) conc * getInfluenceFactor(sub) else conc
+        var isWarn = false
+        for (time in startTime..endTime step stepMs) {
+            var sum = 0f
+            for (line in lines) {
+                val pt = line.points.find { it.timeMs == time }
+                if (pt != null) sum += pt.value
+            }
+            aggPoints.add(KineticPoint(time, sum))
+            if (time == now && sum > 80f) isWarn = true
         }
-        
-        val visualLoad = exactLoad.coerceIn(0f, 100f)
         
         val recentLogs = doses.sortedByDescending { it.timestamp }.take(5).mapNotNull { dose ->
             substanceMap[dose.substanceId]?.let { sub -> Pair(dose, sub) }
         }
         
         return DashboardState(
-            systemLoad = visualLoad,
             todayDoseCount = todayDoses.size,
             todaySpend = spendToday,
             activeSubstancesCount = activeCount,
             spendTrend7d = trend,
             recentLogs = recentLogs,
-            graphPoints = points,
+            kineticLines = lines,
+            aggregatedPoints = aggPoints,
             graphMode = mode,
-            isWarningHighLoad = visualLoad > 80f
+            isWarningHighLoad = isWarn
         )
     }
     
@@ -133,26 +169,48 @@ class DashboardViewModel(
         }
     }
     
-    private fun calculateConcentration(dose: Dose, sub: Substance?, time: Long): Float {
+    private fun calculateDoseConcentration(dose: Dose, sub: Substance?, compounds: List<Compound>, time: Long): Float {
         val dtHours = (time - dose.timestamp) / 3600000.0
         if (dtHours < 0) return 0f
         
-        val halfLife = when (sub?.category) {
-            SubstanceCategory.STIMULANT -> 5.0
-            SubstanceCategory.DEPRESSANT -> 4.0
-            SubstanceCategory.PSYCHEDELIC -> 12.0
-            SubstanceCategory.SUPPLEMENT -> 24.0
-            else -> 6.0
+        if (compounds.isEmpty()) {
+            // Fallback if no compounds exist
+            val halfLife = when (sub?.category) {
+                SubstanceCategory.STIMULANT -> 5.0
+                SubstanceCategory.DEPRESSANT -> 4.0
+                SubstanceCategory.PSYCHEDELIC -> 12.0
+                SubstanceCategory.SUPPLEMENT -> 24.0
+                else -> 6.0
+            }
+            val peak = 0.5 
+            return if (dtHours < peak) {
+                (dose.doseAmount * (dtHours / peak)).toFloat()
+            } else {
+                val postPeak = dtHours - peak
+                val decay = Math.pow(0.5, postPeak / halfLife)
+                (dose.doseAmount * decay).toFloat()
+            }
         }
         
-        val peak = 0.5 
-        return if (dtHours < peak) {
-            (dose.doseAmount * (dtHours / peak)).toFloat()
-        } else {
-            val postPeak = dtHours - peak
-            val decay = Math.pow(0.5, postPeak / halfLife)
-            (dose.doseAmount * decay).toFloat()
+        // Sum concentrations driven by compounds. We assume equal ratio if variant isn't specified, 
+        // but since variant is in DB, we'd need variant map here. For MVP simplicity, we will split dose equally among compounds.
+        val amountPerCompound = dose.doseAmount / compounds.size
+        var totalConc = 0f
+        for(cmp in compounds) {
+            val hl = cmp.halfLifeHours?.toDouble() ?: 6.0
+            val peakMin = cmp.peakMin ?: 30
+            val peak = peakMin / 60.0
+            
+            val conc = if (dtHours < peak) {
+                if (peak == 0.0) amountPerCompound else (amountPerCompound * (dtHours / peak))
+            } else {
+                val postPeak = dtHours - peak
+                val decay = Math.pow(0.5, postPeak / hl)
+                amountPerCompound * decay
+            }
+            totalConc += conc.toFloat()
         }
+        return totalConc
     }
 }
 

@@ -6,6 +6,7 @@ data class Substance(
     val alias: String = "",
     val category: SubstanceCategory,
     val iconKey: String = "ic_pill",
+    val colorHex: String = "#00E676",
     val defaultUnit: String = "mg",
     val active: Boolean = true,
     val notes: String = "",

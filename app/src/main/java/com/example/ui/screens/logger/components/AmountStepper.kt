@@ -31,9 +31,11 @@ fun AmountStepper(
         ) {
             IconButton(
                 onClick = { onAmountChange(maxOf(0f, amount - 1f)) },
-                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Decrease")
+                Icon(Icons.Default.Remove, contentDescription = "Decrease", modifier = Modifier.size(32.dp))
             }
             
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -52,9 +54,11 @@ fun AmountStepper(
             
             IconButton(
                 onClick = { onAmountChange(amount + 1f) },
-                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Increase")
+                Icon(Icons.Default.Add, contentDescription = "Increase", modifier = Modifier.size(32.dp))
             }
         }
     }

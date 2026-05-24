@@ -6,6 +6,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -98,6 +100,34 @@ fun LoggerScreen(
                     selectedRoute = state.route,
                     onRouteSelected = { viewModel.updateRoute(it) }
                 )
+            }
+            
+            // Time
+            Column {
+                Text("Time", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(8.dp))
+                com.example.ui.components.GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { viewModel.updateTimestamp(state.timestamp - 15 * 60 * 1000L) }) {
+                            Icon(Icons.Default.Remove, contentDescription = "-15m")
+                        }
+                        
+                        val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                        Text(
+                            text = formatter.format(java.util.Date(state.timestamp)),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        IconButton(onClick = { viewModel.updateTimestamp(state.timestamp + 15 * 60 * 1000L) }) {
+                            Icon(Icons.Default.Add, contentDescription = "+15m")
+                        }
+                    }
+                }
             }
             
             // Warnings & Estimates

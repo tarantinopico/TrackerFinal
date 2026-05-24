@@ -16,10 +16,10 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.GlassCard
 import com.example.ui.components.SectionHeader
 import com.example.ui.screens.dashboard.GraphMode
-import com.example.ui.screens.dashboard.KineticPoint
+import com.example.ui.screens.dashboard.KineticLine
 
 @Composable
-fun KineticGraph(points: List<KineticPoint>, mode: GraphMode, onModeToggle: () -> Unit) {
+fun KineticGraph(lines: List<KineticLine>, mode: GraphMode, onModeToggle: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(), 
@@ -36,60 +36,94 @@ fun KineticGraph(points: List<KineticPoint>, mode: GraphMode, onModeToggle: () -
             )
         }
 
-        GlassCard(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-            if (points.isEmpty()) {
+        GlassCard(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+            if (lines.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                     Text("No active data for graph.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 return@GlassCard
             }
             
-            val primaryColor = MaterialTheme.colorScheme.primary
-            
-            Canvas(modifier = Modifier.fillMaxSize().padding(top = 16.dp, bottom = 16.dp)) {
-                val maxVal = points.maxOf { it.value }.coerceAtLeast(10f)
-                val minTime = points.first().timeMs
-                val maxTime = points.last().timeMs
+            Canvas(modifier = Modifier.fillMaxSize().padding(top = 24.dp, bottom = 24.dp)) {
+                var maxVal = 0f
+                var minTime = Long.MAX_VALUE
+                var maxTime = Long.MIN_VALUE
+                
+                for (line in lines) {
+                    for (p in line.points) {
+                        if (p.value > maxVal) maxVal = p.value
+                        if (p.timeMs < minTime) minTime = p.timeMs
+                        if (p.timeMs > maxTime) maxTime = p.timeMs
+                    }
+                }
+                
+                maxVal = maxVal.coerceAtLeast(10f)
                 val timeRange = maxTime - minTime
                 if (timeRange <= 0L) return@Canvas
                 
-                val path = Path()
-                points.forEachIndexed { i, p ->
-                    val x = size.width * ((p.timeMs - minTime).toFloat() / timeRange)
-                    val y = size.height - (size.height * (p.value / maxVal))
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                }
-                
-                val fillPath = Path().apply {
-                    addPath(path)
-                    lineTo(size.width, size.height)
-                    lineTo(0f, size.height)
-                    close()
-                }
-                
-                drawPath(
-                    path = fillPath,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(primaryColor.copy(alpha = 0.4f), Color.Transparent)
+                lines.forEach { line ->
+                    val path = Path()
+                    val color = Color(android.graphics.Color.parseColor(line.colorHex))
+                    
+                    line.points.forEachIndexed { i, p ->
+                        val x = size.width * ((p.timeMs - minTime).toFloat() / timeRange)
+                        val y = size.height - (size.height * (p.value / maxVal))
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    
+                    // Draw fill
+                    val fillPath = Path().apply {
+                        addPath(path)
+                        lineTo(size.width, size.height)
+                        lineTo(0f, size.height)
+                        close()
+                    }
+                    
+                    drawPath(
+                        path = fillPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(color.copy(alpha = 0.3f), Color.Transparent)
+                        )
                     )
-                )
+                    
+                    // Draw stroke
+                    drawPath(
+                        path = path,
+                        color = color,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
+                }
                 
-                drawPath(
-                    path = path,
-                    color = primaryColor,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                )
-                
+                // Draw current time marker
                 val now = System.currentTimeMillis()
                 val nowX = size.width * ((now - minTime).toFloat() / timeRange)
                 if(nowX in 0f..size.width) {
                     drawLine(
-                        color = primaryColor.copy(alpha = 0.5f),
+                        color = Color.White.copy(alpha = 0.6f),
                         start = Offset(nowX, 0f),
                         end = Offset(nowX, size.height),
                         strokeWidth = 2.dp.toPx(),
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
                     )
+                }
+            }
+        }
+        
+        // Custom Legend under the graph
+        if (lines.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                lines.forEach { line ->
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Canvas(modifier = Modifier.size(8.dp)) {
+                            drawCircle(Color(android.graphics.Color.parseColor(line.colorHex)))
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(line.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                    }
                 }
             }
         }

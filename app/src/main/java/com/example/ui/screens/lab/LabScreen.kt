@@ -60,6 +60,7 @@ fun LabScreen(viewModel: LabViewModel) {
             VariantEditorSheet(
                 variant = vrt,
                 isNew = state.isEditingNewVariant,
+                availableCompounds = state.selectedCompounds,
                 onUpdate = { viewModel.updateEditingVariant(it) },
                 onSave = { viewModel.saveVariant() },
                 onDismissRequest = { viewModel.closeVariantEditor() },

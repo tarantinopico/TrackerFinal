@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.SectionHeader
 import com.example.ui.screens.dashboard.components.KineticGraph
 import com.example.ui.screens.dashboard.components.RecentLogWidget
-import com.example.ui.screens.dashboard.components.SystemLoadRing
 import com.example.ui.screens.dashboard.components.TodaySummaryCards
 import com.example.ui.state.AppSettingsState
 
@@ -52,17 +51,9 @@ fun DashboardScreen(
             // Header
             SectionHeader(title = "Dashboard", icon = Icons.Default.Dashboard)
             
-            // Ring
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                SystemLoadRing(
-                    loadPercent = state.systemLoad,
-                    isWarning = state.isWarningHighLoad && settings.warningsEnabled
-                )
-            }
-            
             // Graph
             KineticGraph(
-                points = state.graphPoints,
+                lines = state.kineticLines,
                 mode = state.graphMode,
                 onModeToggle = { viewModel.toggleGraphMode() }
             )
