@@ -105,11 +105,12 @@ class SubstanceDetailViewModel(
         
         val line = if (substance != null && activeDoses.isNotEmpty()) {
             val pts = mutableListOf<com.example.ui.screens.dashboard.KineticPoint>()
+            val variantMap = variants.associateBy { it.id }
             for (time in startTime..now step stepMs) {
                 var valueAtTime = 0.0
                 for (dose in activeDoses) {
                     if (dose.timestamp > time || time - dose.timestamp > 48 * 60 * 60 * 1000L) continue 
-                    val focus = com.example.domain.model.PharmacokineticEngine.calculateTotalConcentration(dose, substance, compounds, null, time)
+                    val focus = com.example.domain.model.PharmacokineticEngine.calculateTotalConcentration(dose, substance, compounds, variantMap[dose.variantId], time)
                     valueAtTime += focus
                 }
                 pts.add(com.example.ui.screens.dashboard.KineticPoint(time, valueAtTime.toFloat()))

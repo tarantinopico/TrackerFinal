@@ -41,9 +41,17 @@ object PharmacokineticEngine {
         
         // With compounds, distribute dose by ratio.
         // If variant has exact ratios, use them, otherwise default to equal split.
+        val baseDoseRaw = dose.doseAmount.toDouble()
+        val isMacroUnit = dose.unit.equals("g", ignoreCase = true) || dose.unit.equals("kg", ignoreCase = true)
+        val doseForCompounds = if (isMacroUnit) {
+            UnitConverter.toMg(baseDoseRaw, dose.unit)
+        } else {
+            baseDoseRaw
+        }
+
         return compounds.map { cmp ->
             val ratio = variant?.ratio?.get(cmp.id) ?: (1.0 / compounds.size)
-            val baseAmountForCompound = dose.doseAmount.toDouble() * ratio
+            val baseAmountForCompound = doseForCompounds * ratio
             
             val potency = cmp.potencyMultiplier
             val effectiveAmount = baseAmountForCompound * potency

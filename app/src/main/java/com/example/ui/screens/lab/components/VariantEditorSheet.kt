@@ -92,28 +92,25 @@ fun VariantEditorSheet(
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Text("Compound Ratios (%)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("Define the concentration of each compound in this variant.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Define the concentration of each compound in this variant. (e.g. 1.267)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             
             if (availableCompounds.isEmpty()) {
                 Text("No compounds defined for this substance yet.", fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
             } else {
                 availableCompounds.forEach { cmp ->
                     val currentRatioDouble = (variant.ratio[cmp.id] ?: 0.0) * 100.0
-                    val currentRatioFloat = currentRatioDouble.toFloat()
-                    Column {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(cmp.name)
-                            Text("${currentRatioDouble.roundToInt()} %")
-                        }
-                        Slider(
-                            value = currentRatioFloat,
-                            onValueChange = { pct ->
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        OutlinedTextField(
+                            value = if (currentRatioDouble == 0.0) "" else currentRatioDouble.toString(),
+                            onValueChange = { text ->
+                                val parsed = text.replace(',', '.').toDoubleOrNull() ?: 0.0
                                 val newRatioMap = variant.ratio.toMutableMap()
-                                newRatioMap[cmp.id] = (pct / 100f).toDouble()
+                                newRatioMap[cmp.id] = parsed / 100.0
                                 onUpdate(variant.copy(ratio = newRatioMap))
                             },
-                            valueRange = 0f..100f,
-                            steps = 1000 // 1000 steps for 0.1% precision, wait, slider does floats anyway
+                            label = { Text("${cmp.name} (%)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
                         )
                     }
                 }

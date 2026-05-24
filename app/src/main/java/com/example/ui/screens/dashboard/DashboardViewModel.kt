@@ -50,9 +50,10 @@ class DashboardViewModel(
                 repository.getAllDoses(),
                 repository.getAllSubstances(),
                 repository.getAllCompounds(),
+                repository.getAllVariants(),
                 graphModeFlow
-            ) { doses, substances, compounds, mode ->
-                calculateState(doses, substances, compounds, mode)
+            ) { doses, substances, compounds, variants, mode ->
+                calculateState(doses, substances, compounds, variants, mode)
             }.flowOn(Dispatchers.Default)
              .collect { newState -> _state.value = newState }
         }
@@ -66,6 +67,7 @@ class DashboardViewModel(
         doses: List<Dose>, 
         substances: List<Substance>, 
         compounds: List<Compound>,
+        variants: List<Variant>,
         mode: GraphMode
     ): DashboardState {
         val now = System.currentTimeMillis()
@@ -85,9 +87,7 @@ class DashboardViewModel(
         val stepMs = 15 * 60 * 1000L
         
         val substanceMap = substances.associateBy { it.id }
-        // For accurate calculation, we'd need variants to know the ratio.
-        // Assuming doses mostly don't store variant directly unless they do.
-        // We will default to a 1:1 ratio for simplicity if variant info isn't available.
+        val variantMap = variants.associateBy { it.id }
         val compoundMap = compounds.groupBy { it.substanceId }
         
         val activeDoses = doses.filter { it.timestamp > startTime - 48 * 60 * 60 * 1000L && it.timestamp <= endTime }
@@ -105,7 +105,7 @@ class DashboardViewModel(
                 var valueAtTime = 0f
                 for (dose in subDoses) {
                     if (dose.timestamp > time || time - dose.timestamp > 48 * 60 * 60 * 1000L) continue 
-                    val focus = calculateDoseConcentration(dose, sub, subCompounds, time)
+                    val focus = calculateDoseConcentration(dose, sub, subCompounds, variantMap[dose.variantId], time)
                     valueAtTime += if (mode == GraphMode.INFLUENCE) focus * getInfluenceFactor(sub) else focus
                 }
                 pts.add(KineticPoint(time, valueAtTime))
@@ -169,10 +169,8 @@ class DashboardViewModel(
         }
     }
     
-    private fun calculateDoseConcentration(dose: Dose, sub: Substance?, compounds: List<Compound>, time: Long): Float {
-        // Find variant if necessary, but here we don't pass variant in dashboard MVP, or we can look it up.
-        // For accurate variant ratio, Dashboard needs variants. But for MVP, pass null.
-        return com.example.domain.model.PharmacokineticEngine.calculateTotalConcentration(dose, sub, compounds, null, time).toFloat()
+    private fun calculateDoseConcentration(dose: Dose, sub: Substance?, compounds: List<Compound>, variant: Variant?, time: Long): Float {
+        return com.example.domain.model.PharmacokineticEngine.calculateTotalConcentration(dose, sub, compounds, variant, time).toFloat()
     }
 }
 
