@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -57,11 +58,7 @@ fun SubstanceDetailScreen(
                     }
                 }
 
-                when (selectedTabIndex) {
-                    0 -> OverviewTab(state)
-                    1 -> CompositionTab(state)
-                    2 -> AnalyticsTab(state, onPeriodChange = { viewModel.setTimePeriod(it) })
-                }
+                OverviewTab(state, onPeriodChange = { viewModel.setTimePeriod(it) }, onDeleteDose = { viewModel.deleteDose(it) })
             }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -72,7 +69,7 @@ fun SubstanceDetailScreen(
 }
 
 @Composable
-fun OverviewTab(state: SubstanceDetailState) {
+fun OverviewTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Unit, onDeleteDose: (String) -> Unit) {
     val substance = state.substance ?: return
     Column(
         modifier = Modifier
@@ -81,27 +78,38 @@ fun OverviewTab(state: SubstanceDetailState) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column {
-                Text("Category", style = MaterialTheme.typography.labelMedium)
-                Text(substance.category.name, style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text("Notes", style = MaterialTheme.typography.labelMedium)
-                Text(substance.notes.ifEmpty { "No description available." }, style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text("Default Unit", style = MaterialTheme.typography.labelMedium)
-                Text(substance.defaultUnit, style = MaterialTheme.typography.titleMedium)
+        val periods = TimePeriod.values().toList()
+        ScrollableTabRow(
+            selectedTabIndex = periods.indexOf(state.timePeriod),
+            edgePadding = 0.dp
+        ) {
+            periods.forEachIndexed { index, period ->
+                Tab(
+                    selected = state.timePeriod == period,
+                    onClick = { onPeriodChange(period) },
+                    text = { Text(period.label) }
+                )
             }
         }
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard("Total Doses", state.totalDoses.toString(), Modifier.weight(1f))
-            MetricCard("Avg / Day", String.format("%.1f", state.avgPerDay), Modifier.weight(1f))
-            MetricCard("Total Cost", String.format("$%.2f", state.totalCost), Modifier.weight(1f))
+            MetricCard("Doses", state.periodDoses.toString(), Modifier.weight(1f))
+            MetricCard("Cons.", "${String.format("%.1f", state.periodConsumption)} ${state.substance?.defaultUnit ?: ""}", Modifier.weight(1f))
+            MetricCard("Cost", String.format("$%.2f", state.periodCost), Modifier.weight(1f))
         }
-        
+
+        SimpleLineChartCard(
+            title = "Consumption Trend (${state.substance?.defaultUnit ?: ""})",
+            data = state.consumptionTrend,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        SimpleLineChartCard(
+            title = "Spend Trend ($)",
+            data = state.spendTrend,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+
         Text("Recent Doses", style = MaterialTheme.typography.titleLarge)
         val recent = state.doses.sortedByDescending { it.timestamp }.take(10)
         if (recent.isEmpty()) {
@@ -110,25 +118,42 @@ fun OverviewTab(state: SubstanceDetailState) {
             recent.forEach { dose ->
                 val varName = state.variants.find { it.id == dose.variantId }?.name ?: "Unknown"
                 GlassCard {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(), 
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
                         Column {
                             Text(varName, style = MaterialTheme.typography.titleSmall)
                             val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
                             Text(formatter.format(java.util.Date(dose.timestamp)), style = MaterialTheme.typography.bodySmall)
                         }
-                        Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
-                            Text("${dose.doseAmount} ${dose.unit}", fontWeight = FontWeight.Bold)
-                            Text(dose.route, style = MaterialTheme.typography.bodySmall)
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                                Text("${dose.doseAmount} ${dose.unit}", fontWeight = FontWeight.Bold)
+                                Text(dose.route, style = MaterialTheme.typography.bodySmall)
+                            }
+                            IconButton(onClick = { onDeleteDose(dose.id) }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Delete Dose", tint = MaterialTheme.colorScheme.error)
+                            }
                         }
                     }
                 }
             }
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Lifetime Metrics", style = MaterialTheme.typography.titleLarge)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            MetricCard("Total Doses", state.totalDoses.toString(), Modifier.weight(1f))
+            MetricCard("Avg / Day", String.format("%.1f", state.avgPerDay), Modifier.weight(1f))
+            MetricCard("Total Cost", String.format("$%.2f", state.totalCost), Modifier.weight(1f))
+        }
     }
 }
 
 @Composable
-private fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
+fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
     GlassCard(modifier = modifier) {
         Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)

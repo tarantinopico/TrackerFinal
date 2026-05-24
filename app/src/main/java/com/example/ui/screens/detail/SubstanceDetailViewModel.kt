@@ -76,6 +76,12 @@ class SubstanceDetailViewModel(
         _state.update { calculateState(it.substance, it.compounds, it.variants, it.doses, period) }
     }
     
+    fun deleteDose(doseId: String) {
+        viewModelScope.launch {
+            repository.deleteDose(doseId)
+        }
+    }
+    
     private fun calculateState(substance: Substance?, compounds: List<Compound>, variants: List<Variant>, doses: List<Dose>, timePeriod: TimePeriod): SubstanceDetailState {
         val totalDoses = doses.size
         var totalCost = 0f

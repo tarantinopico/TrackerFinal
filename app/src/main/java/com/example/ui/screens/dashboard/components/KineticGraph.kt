@@ -22,12 +22,7 @@ import com.example.ui.screens.dashboard.KineticLine
 @Composable
 fun KineticGraph(lines: List<KineticLine>, mode: GraphMode, onModeToggle: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(), 
-            horizontalArrangement = Arrangement.SpaceBetween, 
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            SectionHeader(title = "Kinetic Profile", icon = Icons.Default.AvTimer)
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.CenterEnd) {
             Text(
                 text = if(mode == GraphMode.INFLUENCE) "INFLUENCE %" else "CONCENTRATION",
                 style = MaterialTheme.typography.labelSmall,
