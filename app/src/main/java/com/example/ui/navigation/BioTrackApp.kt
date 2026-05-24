@@ -77,10 +77,12 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
                 )
             }
             composable(Routes.LAB) {
-               com.example.ui.screens.lab.LabScreen(
-                   substances = substances,
-                   onAddSubstance = { /* Handled in lab screen in future */ }
-               )
+                val labViewModel: com.example.ui.screens.lab.LabViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.ui.screens.lab.LabViewModelFactory(viewModel.repository)
+                )
+                com.example.ui.screens.lab.LabScreen(
+                    viewModel = labViewModel
+                )
             }
             composable(Routes.ANALYTICS) {
                 com.example.ui.screens.analytics.AnalyticsScreen(logs = logs)
