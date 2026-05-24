@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.material3.Text
+import androidx.compose.ui.tooling.preview.Preview
+
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
@@ -50,6 +53,16 @@ fun GlassCard(
             .padding(16.dp)
     ) {
         content()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GlassCardPreview() {
+    MaterialTheme {
+        GlassCard {
+            Text("This is a glass card")
+        }
     }
 }
 

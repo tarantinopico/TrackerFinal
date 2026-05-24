@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -120,7 +120,7 @@ fun LabScreen(viewModel: LabViewModel) {
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { viewModel.viewSubstance(null) }, modifier = Modifier.padding(end = 8.dp)) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
                             SubstanceDetailHeader(
                                 substance = substance,
@@ -130,7 +130,7 @@ fun LabScreen(viewModel: LabViewModel) {
                             )
                         }
                         
-                        Divider()
+                        HorizontalDivider()
                         
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxSize()) {
                             // Compounds
