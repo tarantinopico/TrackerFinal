@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.domain.model.Substance
@@ -59,7 +60,7 @@ fun SubstanceDetailScreen(
                 when (selectedTabIndex) {
                     0 -> OverviewTab(state)
                     1 -> CompositionTab(state)
-                    2 -> AnalyticsTab(state)
+                    2 -> AnalyticsTab(state, onPeriodChange = { viewModel.setTimePeriod(it) })
                 }
             }
         } else {
@@ -96,7 +97,7 @@ fun OverviewTab(state: SubstanceDetailState) {
         }
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard("Doses", state.totalDoses.toString(), Modifier.weight(1f))
+            MetricCard("Total Doses", state.totalDoses.toString(), Modifier.weight(1f))
             MetricCard("Avg / Day", String.format("%.1f", state.avgPerDay), Modifier.weight(1f))
             MetricCard("Total Cost", String.format("$%.2f", state.totalCost), Modifier.weight(1f))
         }
@@ -186,7 +187,7 @@ fun CompositionTab(state: SubstanceDetailState) {
 }
 
 @Composable
-fun AnalyticsTab(state: SubstanceDetailState) {
+fun AnalyticsTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -194,6 +195,38 @@ fun AnalyticsTab(state: SubstanceDetailState) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val periods = TimePeriod.values().toList()
+        ScrollableTabRow(
+            selectedTabIndex = periods.indexOf(state.timePeriod),
+            edgePadding = 0.dp
+        ) {
+            periods.forEachIndexed { index, period ->
+                Tab(
+                    selected = state.timePeriod == period,
+                    onClick = { onPeriodChange(period) },
+                    text = { Text(period.label) }
+                )
+            }
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            MetricCard("Period Doses", state.periodDoses.toString(), Modifier.weight(1f))
+            MetricCard("Period Cons.", "${String.format("%.1f", state.periodConsumption)} ${state.substance?.defaultUnit ?: ""}", Modifier.weight(1f))
+            MetricCard("Period Cost", String.format("$%.2f", state.periodCost), Modifier.weight(1f))
+        }
+
+        SimpleLineChartCard(
+            title = "Consumption Trend (${state.substance?.defaultUnit ?: ""})",
+            data = state.consumptionTrend,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        SimpleLineChartCard(
+            title = "Spend Trend ($)",
+            data = state.spendTrend,
+            color = MaterialTheme.colorScheme.tertiary
+        )
+
         if (state.kineticLines.isNotEmpty()) {
             GlassCard {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -232,5 +265,59 @@ fun AnalyticsTab(state: SubstanceDetailState) {
             data = state.hourOfDayDist,
             colorList = listOf(MaterialTheme.colorScheme.secondary)
         )
+    }
+}
+
+@Composable
+fun SimpleLineChartCard(title: String, data: List<TimePoint>, color: androidx.compose.ui.graphics.Color) {
+    if (data.isEmpty()) return
+    GlassCard {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.height(150.dp).fillMaxWidth()) {
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    val maxVal = data.maxOfOrNull { it.value } ?: 1f
+                    val yLabelSteps = 4
+                    val labelPaint = android.graphics.Paint().apply {
+                        this.color = android.graphics.Color.GRAY
+                        textSize = 10.dp.toPx()
+                    }
+                    
+                    // Draw Y axis labels
+                    for (i in 0..yLabelSteps) {
+                        val v = maxVal * (i / yLabelSteps.toFloat())
+                        val yPos = size.height - (size.height * (i / yLabelSteps.toFloat()))
+                        val drawY = if (i == yLabelSteps) yPos + 10.dp.toPx() else if (i == 0) yPos - 2.dp.toPx() else yPos
+                        drawContext.canvas.nativeCanvas.drawText(String.format("%.1f", v), 0f, drawY, labelPaint)
+                    }
+
+                    if (data.size > 1) {
+                        val path = androidx.compose.ui.graphics.Path()
+                        val stepX = size.width / (data.size - 1)
+                        data.forEachIndexed { index, point ->
+                            val drawMax = if (maxVal > 0) maxVal else 1f
+                            val x = index * stepX
+                            val y = size.height - (point.value / drawMax * size.height)
+                            if (index == 0) {
+                                path.moveTo(x, y)
+                            } else {
+                                path.lineTo(x, y)
+                            }
+                            
+                            // Draw X axis labels (skip some to avoid crowding if too many)
+                            val drawLabel = if (data.size > 15) index % (data.size / 5) == 0 else true
+                            if (drawLabel || index == data.size - 1) {
+                                val txPos = if (index == data.size - 1) x - 20.dp.toPx() else x
+                                drawContext.canvas.nativeCanvas.drawText(point.label, txPos, size.height + 15.dp.toPx(), labelPaint)
+                            }
+                        }
+                        drawPath(path, color = color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx()))
+                    } else if (data.size == 1) {
+                        drawContext.canvas.nativeCanvas.drawText(data.first().label, size.width / 2, size.height + 15.dp.toPx(), labelPaint)
+                    }
+                }
+            }
+        }
     }
 }

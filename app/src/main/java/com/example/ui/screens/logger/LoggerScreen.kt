@@ -78,8 +78,12 @@ fun LoggerScreen(
     if (state.showQuickDoseSheet) {
         QuickDoseSheet(
             quickDoses = state.quickDoses,
+            substances = state.substances,
+            variants = state.variants,
             onDismissRequest = { viewModel.toggleQuickDoseSheet(false) },
             onQuickDoseSelected = { viewModel.applyQuickDose(it) },
+            onSaveQuickDose = { viewModel.saveQuickDose(it) },
+            onDeleteQuickDose = { viewModel.deleteQuickDose(it) },
             sheetState = sheetState
         )
     }

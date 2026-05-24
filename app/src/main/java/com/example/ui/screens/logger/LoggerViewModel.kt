@@ -133,6 +133,18 @@ class LoggerViewModel(
         }
     }
 
+    fun saveQuickDose(qd: QuickDose) {
+        viewModelScope.launch {
+            repository.saveQuickDose(qd)
+        }
+    }
+
+    fun deleteQuickDose(id: String) {
+        viewModelScope.launch {
+            repository.deleteQuickDose(id)
+        }
+    }
+
     private fun updateEstimatesAndWarnings() {
         val currentState = _state.value
         val sub = currentState.selectedSubstance ?: return
