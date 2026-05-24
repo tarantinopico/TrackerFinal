@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class BioTrackViewModel(
-    private val repository: BioTrackRepository
+    val repository: BioTrackRepository
 ) : ViewModel() {
 
     private val _settingsState = MutableStateFlow(AppSettingsState())

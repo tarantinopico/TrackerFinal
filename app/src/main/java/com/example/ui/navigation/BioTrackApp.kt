@@ -50,9 +50,11 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
             modifier = Modifier.padding(bottom = if (showBottomNav) paddingValues.calculateBottomPadding() else 0.dp)
         ) {
             composable(Routes.DASHBOARD) {
-                DashboardScreen(
-                    logs = logs,
-                    substances = substances,
+                val dashboardViewModel: com.example.ui.screens.dashboard.DashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.ui.screens.dashboard.DashboardViewModelFactory(viewModel.repository)
+                )
+                com.example.ui.screens.dashboard.DashboardScreen(
+                    viewModel = dashboardViewModel,
                     settings = settings,
                     onNavigateToLog = { navController.navigate(Routes.LOGGING) },
                     onNavigateToSubstanceDetail = { id -> 

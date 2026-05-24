@@ -1,149 +1,79 @@
 package com.example.ui.screens.dashboard
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.domain.model.Dose
-import com.example.domain.model.Substance
-import com.example.ui.components.GlassCard
+import com.example.ui.components.SectionHeader
+import com.example.ui.screens.dashboard.components.KineticGraph
+import com.example.ui.screens.dashboard.components.RecentLogWidget
+import com.example.ui.screens.dashboard.components.SystemLoadRing
+import com.example.ui.screens.dashboard.components.TodaySummaryCards
 import com.example.ui.state.AppSettingsState
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    logs: List<Dose>,
-    substances: List<Substance>,
+    viewModel: DashboardViewModel,
     settings: AppSettingsState,
     onNavigateToLog: () -> Unit,
-    onNavigateToSubstanceDetail: (String) -> Unit
+    onNavigateToSubstanceDetail: (String) -> Unit = {}
 ) {
+    val state by viewModel.state.collectAsState()
+    
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToLog,
                 containerColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.testTag("fab_add_log")
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Log")
+                Icon(Icons.Default.Add, contentDescription = "Quick Action")
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingVals ->
-        LazyColumn(
+        }
+    ) { padding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingVals)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "Overview",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold
+            // Header
+            SectionHeader(title = "Dashboard", icon = Icons.Default.Dashboard)
+            
+            // Ring
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                SystemLoadRing(
+                    loadPercent = state.systemLoad,
+                    isWarning = state.isWarningHighLoad && settings.warningsEnabled
                 )
-                Spacer(modifier = Modifier.height(16.dp))
             }
             
-            if (logs.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No logs yet. Start tracking...", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            } else {
-                items(logs) { log ->
-                    val substance = substances.find { it.id == log.substanceId }
-                    if (substance != null) {
-                        DashboardLogItem(
-                            log = log, 
-                            substance = substance, 
-                            privacyMode = settings.privacyMode,
-                            onClick = { onNavigateToSubstanceDetail(substance.id) }
-                        )
-                    }
-                }
-            }
-            item { Spacer(modifier = Modifier.height(80.dp)) }
-        }
-    }
-}
-
-@Composable
-fun DashboardLogItem(
-    log: Dose, 
-    substance: Substance, 
-    privacyMode: Boolean,
-    onClick: () -> Unit
-) {
-    val blurModifier = if (privacyMode) Modifier.blur(8.dp) else Modifier
-    val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(log.timestamp))
-
-    GlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .testTag("log_item_${log.id}")
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = if(privacyMode) "••••••" else substance.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = blurModifier
-                    )
-                    Text(
-                        text = "$timeStr • ${substance.category.name.lowercase().replaceFirstChar{it.uppercase()}}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            // Graph
+            KineticGraph(
+                points = state.graphPoints,
+                mode = state.graphMode,
+                onModeToggle = { viewModel.toggleGraphMode() }
+            )
             
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = if(privacyMode) "••" else "${log.doseAmount} ${log.unit}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = blurModifier
-                )
-            }
+            // Summary Cards
+            TodaySummaryCards(state = state, settings = settings)
+            
+            // Recent Logs
+            RecentLogWidget(logs = state.recentLogs, privacyMode = settings.privacyMode)
+            
+            Spacer(modifier = Modifier.height(60.dp)) // Nav bar padding
         }
     }
 }
