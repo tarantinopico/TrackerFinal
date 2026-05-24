@@ -1,10 +1,13 @@
 package com.example.ui.screens.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -16,12 +19,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.domain.model.Substance
 import com.example.ui.components.GlassCard
+import com.example.ui.components.GlassSurface
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,43 +44,90 @@ fun SubstanceDetailScreen(
     var selectedTabIndex by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
     val tabs = listOf("Overview", "Composition", "Analytics")
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(substance?.name ?: "Loading...") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+                            Color.Transparent
+                        ),
+                        radius = 1200f,
+                        center = androidx.compose.ui.geometry.Offset(100f, 100f)
+                    )
+                )
+        )
+
         if (substance != null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(bottom = 120.dp)
             ) {
-                TabRow(selectedTabIndex = selectedTabIndex) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index },
-                            text = { Text(title) }
-                        )
+                Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+
+                // Custom Large Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = substance.name,
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                // Modern Segmented Control replacement for TabRow
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    GlassSurface(shape = RoundedCornerShape(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                            tabs.forEachIndexed { index, title ->
+                                val isSelected = selectedTabIndex == index
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { selectedTabIndex = index }
+                                        .background(if (isSelected) MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.6f) else Color.Transparent)
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        title,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if(isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
-                OverviewTab(state, onPeriodChange = { viewModel.setTimePeriod(it) }, onDeleteDose = { viewModel.deleteDose(it) })
+                when (selectedTabIndex) {
+                    0 -> OverviewTab(state, onPeriodChange = { viewModel.setTimePeriod(it) }, onDeleteDose = { viewModel.deleteDose(it) })
+                    1 -> CompositionTab(state)
+                    2 -> AnalyticsTab(state, onPeriodChange = { viewModel.setTimePeriod(it) })
+                }
             }
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

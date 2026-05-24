@@ -1,10 +1,13 @@
 package com.example.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
@@ -28,26 +31,11 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
         Routes.DASHBOARD, Routes.LOGGING, Routes.LAB, Routes.ANALYTICS, Routes.SETTINGS
     )
 
-    Scaffold(
-        bottomBar = {
-            if (showBottomNav) {
-                BottomBar(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(Routes.DASHBOARD) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
             startDestination = Routes.DASHBOARD,
-            modifier = Modifier.padding(bottom = if (showBottomNav) paddingValues.calculateBottomPadding() else 0.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Routes.DASHBOARD) {
                 val dashboardViewModel: com.example.ui.screens.dashboard.DashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
@@ -112,5 +100,21 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
                 )
             }
         }
+        
+        if (showBottomNav) {
+            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                BottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(Routes.DASHBOARD) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+        }
     }
 }
+
