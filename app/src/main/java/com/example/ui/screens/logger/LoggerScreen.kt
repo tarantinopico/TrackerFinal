@@ -16,6 +16,53 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.SectionHeader
 import com.example.ui.screens.logger.components.*
+import com.example.domain.model.*
+
+@Composable
+fun ActiveCompoundsPreview(
+    amount: Float,
+    unit: String,
+    compounds: List<Compound>,
+    variant: Variant?
+) {
+    com.example.ui.components.GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                "Active Compounds Extraction", 
+                style = MaterialTheme.typography.labelSmall, 
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            val isMacroUnit = unit.equals("g", ignoreCase = true) || unit.equals("kg", ignoreCase = true)
+            val doseMg = if (isMacroUnit) UnitConverter.toMg(amount.toDouble(), unit) else amount.toDouble()
+
+            compounds.forEach { cmp ->
+                val ratio = variant?.ratio?.get(cmp.id) ?: (1.0 / compounds.size)
+                val activeMg = doseMg * ratio
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "${String.format("%.2f", ratio * 100)}% ${cmp.name}", 
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "${String.format("%.2f", activeMg)} mg", 
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,13 +101,13 @@ fun LoggerScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Substance
             Column {
-                Text("Select Substance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("Substance", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
                 SubstancePicker(
                     substances = state.substances,
                     selectedSubstance = state.selectedSubstance,
@@ -71,8 +118,8 @@ fun LoggerScreen(
             // Variant (if present)
             if (state.variants.isNotEmpty()) {
                 Column {
-                    Text("Select Variant", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Variant", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(4.dp))
                     VariantPicker(
                         variants = state.variants,
                         selectedVariant = state.selectedVariant,
@@ -83,19 +130,28 @@ fun LoggerScreen(
             
             // Amount
             Column {
-                Text("Amount", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("Amount", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
                 AmountStepper(
                     amount = state.amount,
                     unit = state.unit,
                     onAmountChange = { viewModel.updateAmount(it) }
                 )
+                if (state.amount > 0 && state.compounds.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ActiveCompoundsPreview(
+                        amount = state.amount,
+                        unit = state.unit,
+                        compounds = state.compounds,
+                        variant = state.selectedVariant
+                    )
+                }
             }
             
             // Route
             Column {
-                Text("Route of Administration", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("Route of Administration", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
                 RouteSelector(
                     selectedRoute = state.route,
                     onRouteSelected = { viewModel.updateRoute(it) }
@@ -104,11 +160,11 @@ fun LoggerScreen(
             
             // Time
             Column {
-                Text("Time", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("Time", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
                 com.example.ui.components.GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -145,7 +201,8 @@ fun LoggerScreen(
                     onValueChange = { viewModel.updatePrice(it.toFloatOrNull()) },
                     label = { Text("Price (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Calculated automatically if variant has price") }
+                    singleLine = true,
+                    placeholder = { Text("Calculated automatically") }
                 )
             }
             
@@ -155,10 +212,11 @@ fun LoggerScreen(
                 onValueChange = { viewModel.updateNotes(it) },
                 label = { Text("Notes & Context") },
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 3
+                minLines = 2,
+                maxLines = 4
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
             Button(
                 onClick = { viewModel.saveLog(onSaveSuccess) },

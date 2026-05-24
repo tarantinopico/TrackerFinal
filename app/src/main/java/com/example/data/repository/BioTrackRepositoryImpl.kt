@@ -91,4 +91,8 @@ class BioTrackRepositoryImpl(
     override suspend fun saveSettings(settings: AppSettings) {
         db.settingsDao().insertSettings(settings.toEntity())
     }
+
+    override suspend fun clearAllData() {
+        db.clearAllTables()
+    }
 }

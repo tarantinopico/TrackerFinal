@@ -45,11 +45,11 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(28.dp)
+                .padding(horizontal = 16.dp, vertical = if (settings.compactMode) 12.dp else 20.dp),
+            verticalArrangement = Arrangement.spacedBy(if (settings.compactMode) 16.dp else 24.dp)
         ) {
             // Header
-            SectionHeader(title = "Dashboard", icon = Icons.Default.Dashboard)
+            SectionHeader(title = "Overview", icon = Icons.Default.Dashboard)
             
             // Graph
             KineticGraph(

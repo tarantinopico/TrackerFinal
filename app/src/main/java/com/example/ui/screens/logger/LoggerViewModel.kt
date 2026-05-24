@@ -12,6 +12,7 @@ import java.util.UUID
 data class LoggerState(
     val substances: List<Substance> = emptyList(),
     val variants: List<Variant> = emptyList(),
+    val compounds: List<Compound> = emptyList(),
     val quickDoses: List<QuickDose> = emptyList(),
     val selectedSubstance: Substance? = null,
     val selectedVariant: Variant? = null,
@@ -139,6 +140,8 @@ class LoggerViewModel(
         viewModelScope.launch {
             val compounds = repository.getCompoundsForSubstance(sub.id).first()
             var warning: String? = null
+            
+            _state.update { it.copy(compounds = compounds) }
             
             // Farmakokinetický pre-kalkul
             val compound = compounds.firstOrNull()

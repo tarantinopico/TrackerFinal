@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.GlassCard
@@ -57,9 +58,23 @@ fun KineticGraph(lines: List<KineticLine>, mode: GraphMode, onModeToggle: () -> 
                     }
                 }
                 
-                maxVal = maxVal.coerceAtLeast(10f)
+                maxVal = if (maxVal > 0f) maxVal * 1.1f else 1f
                 val timeRange = maxTime - minTime
                 if (timeRange <= 0L) return@Canvas
+                
+                // Draw Y axis labels
+                val labelPaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.GRAY // text color
+                    textSize = 10.dp.toPx()
+                }
+                for (i in 0..4) {
+                    val v = maxVal * (i / 4f)
+                    val labelText = if (mode == GraphMode.INFLUENCE) "${v.toInt()}%" else String.format("%.1f", v)
+                    val y = size.height - (size.height * (i / 4f))
+                    // Ensure the top label is slightly pushed down to be fully visible
+                    val drawY = if (i == 4) y + 10.dp.toPx() else if (i == 0) y - 2.dp.toPx() else y
+                    drawContext.canvas.nativeCanvas.drawText(labelText, 0f, drawY, labelPaint)
+                }
                 
                 lines.forEach { line ->
                     val path = Path()

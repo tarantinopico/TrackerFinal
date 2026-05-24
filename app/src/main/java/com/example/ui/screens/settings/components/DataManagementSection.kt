@@ -16,9 +16,11 @@ import java.util.Locale
 @Composable
 fun DataManagementSection(
     onExport: (Uri) -> Unit,
-    onImport: (Uri, Boolean) -> Unit
+    onImport: (Uri, Boolean) -> Unit,
+    onWipeData: () -> Unit
 ) {
     var showImportDialog by remember { mutableStateOf<Uri?>(null) }
+    var showWipeDialog by remember { mutableStateOf(false) }
     
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -67,9 +69,38 @@ fun DataManagementSection(
                     Text("Import")
                 }
             }
+            
+            Button(
+                onClick = { showWipeDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Wipe All Data")
+            }
         }
     }
     
+    if (showWipeDialog) {
+        AlertDialog(
+            onDismissRequest = { showWipeDialog = false },
+            title = { Text("Wipe All Data") },
+            text = { Text("Are you sure you want to permanently delete all substances, variants, compounds, limits, and your entire dose history? This cannot be undone.", color = MaterialTheme.colorScheme.error) },
+            confirmButton = {
+                Button(onClick = { 
+                    onWipeData() 
+                    showWipeDialog = false
+                }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
+                    Text("Delete Everything")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWipeDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     if (showImportDialog != null) {
         var overwrite by remember { mutableStateOf(false) }
         

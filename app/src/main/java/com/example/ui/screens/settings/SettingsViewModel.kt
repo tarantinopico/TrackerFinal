@@ -63,6 +63,13 @@ class SettingsViewModel(
     fun clearBackupMessage() {
         _state.update { it.copy(backupMessage = null) }
     }
+    
+    fun clearAllData() {
+        viewModelScope.launch {
+            repository.clearAllData()
+            _state.update { it.copy(backupMessage = "All data cleared successfully!") }
+        }
+    }
 }
 
 class SettingsViewModelFactory(

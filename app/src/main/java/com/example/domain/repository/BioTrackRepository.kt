@@ -38,4 +38,5 @@ interface BioTrackRepository {
     // Settings
     fun getSettings(): Flow<AppSettings?>
     suspend fun saveSettings(settings: AppSettings)
+    suspend fun clearAllData()
 }

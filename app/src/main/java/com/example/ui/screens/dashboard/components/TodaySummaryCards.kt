@@ -17,13 +17,15 @@ import com.example.ui.theme.DangerRed
 
 @Composable
 fun TodaySummaryCards(state: DashboardState, settings: AppSettingsState) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+    val comp = settings.compactMode
+    Column(verticalArrangement = Arrangement.spacedBy(if (comp) 8.dp else 12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(if (comp) 8.dp else 12.dp), modifier = Modifier.fillMaxWidth()) {
             SummaryCard(
                 modifier = Modifier.weight(1f),
                 title = "Doses Today",
                 value = state.todayDoseCount.toString(),
-                icon = Icons.Default.Science
+                icon = Icons.Default.Science,
+                compactMode = comp
             )
             val spendStr = if (settings.privacyMode || !settings.financeMode) "•••" else "$ ${"%.2f".format(state.todaySpend)}"
             SummaryCard(
@@ -31,22 +33,25 @@ fun TodaySummaryCards(state: DashboardState, settings: AppSettingsState) {
                 title = "Spent Today",
                 value = spendStr,
                 icon = Icons.Default.AttachMoney,
-                subtitle = if(state.spendTrend7d != 0f && !settings.privacyMode) "${if(state.spendTrend7d > 0) "+" else ""}${"%.1f".format(state.spendTrend7d)}% (7d)" else null
+                subtitle = if(state.spendTrend7d != 0f && !settings.privacyMode) "${if(state.spendTrend7d > 0) "+" else ""}${"%.1f".format(state.spendTrend7d)}% (7d)" else null,
+                compactMode = comp
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(if (comp) 8.dp else 12.dp), modifier = Modifier.fillMaxWidth()) {
             SummaryCard(
                 modifier = Modifier.weight(1f),
                 title = "Active Subs",
                 value = state.activeSubstancesCount.toString(),
-                icon = Icons.Default.Category
+                icon = Icons.Default.Category,
+                compactMode = comp
             )
             SummaryCard(
                 modifier = Modifier.weight(1f),
                 title = "Load Status",
                 value = if(state.isWarningHighLoad && settings.warningsEnabled) "High" else "Optimal",
                 icon = if(state.isWarningHighLoad && settings.warningsEnabled) Icons.Default.Warning else Icons.Default.CheckCircle,
-                valueColor = if(state.isWarningHighLoad && settings.warningsEnabled) DangerRed else MaterialTheme.colorScheme.primary
+                valueColor = if(state.isWarningHighLoad && settings.warningsEnabled) DangerRed else MaterialTheme.colorScheme.primary,
+                compactMode = comp
             )
         }
     }
@@ -59,10 +64,11 @@ fun SummaryCard(
     value: String,
     icon: ImageVector,
     subtitle: String? = null,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    compactMode: Boolean = false
 ) {
-    GlassCard(modifier = modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    GlassCard(modifier = modifier, padding = if (compactMode) 8.dp else 16.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(if (compactMode) 4.dp else 8.dp)) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -67,7 +67,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             
             DataManagementSection(
                 onExport = { uri -> viewModel.exportDatabase(uri) },
-                onImport = { uri, overwrite -> viewModel.importDatabase(uri, overwrite) }
+                onImport = { uri, overwrite -> viewModel.importDatabase(uri, overwrite) },
+                onWipeData = { viewModel.clearAllData() }
             )
             
             Spacer(modifier = Modifier.height(80.dp))
