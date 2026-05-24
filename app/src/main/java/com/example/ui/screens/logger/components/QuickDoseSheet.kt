@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -77,7 +78,8 @@ fun QuickDoseSheet(
                 if (quickDoses.isEmpty()) {
                     Text("No Quick Doses saved yet. Tap 'Add New' to create one.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
-                    quickDoses.forEach { qd ->
+                    val sorted = quickDoses.sortedWith(compareByDescending<QuickDose> { it.pinned }.thenBy { it.label })
+                    sorted.forEach { qd ->
                         GlassCard(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -85,7 +87,13 @@ fun QuickDoseSheet(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(qd.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (qd.pinned) {
+                                            Icon(Icons.Default.Star, contentDescription = "Pinned", tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                        }
+                                        Text(qd.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    }
                                     Text("${qd.defaultAmount} ${qd.defaultUnit} • ${qd.defaultRoute}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Row(
@@ -131,6 +139,7 @@ fun QuickDoseEditor(
     var selectedVariantId by remember { mutableStateOf(quickDose?.variantId ?: "") }
     var route by remember { mutableStateOf(quickDose?.defaultRoute ?: "Oral") }
     var priceStr by remember { mutableStateOf(quickDose?.defaultPrice?.toString() ?: "") }
+    var pinned by remember { mutableStateOf(quickDose?.pinned ?: false) }
 
     val activeSubstance = substances.find { it.id == selectedSubstanceId }
     val availableVariants = if (activeSubstance != null) variants.filter { it.substanceId == activeSubstance.id } else emptyList()
@@ -142,7 +151,13 @@ fun QuickDoseEditor(
             .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(if (quickDose == null) "New Quick Dose" else "Edit Quick Dose", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(if (quickDose == null) "New Quick Dose" else "Edit Quick Dose", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Pin to Top", style = MaterialTheme.typography.bodyMedium)
+                Checkbox(checked = pinned, onCheckedChange = { pinned = it })
+            }
+        }
 
         OutlinedTextField(
             value = label,
@@ -224,7 +239,8 @@ fun QuickDoseEditor(
                         defaultAmount = amount,
                         defaultUnit = activeSubstance?.defaultUnit ?: "mg",
                         defaultRoute = route,
-                        defaultPrice = price
+                        defaultPrice = price,
+                        pinned = pinned
                     )
                     onSave(newQd)
                 },

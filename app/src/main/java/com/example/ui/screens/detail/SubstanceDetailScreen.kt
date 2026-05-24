@@ -1,10 +1,15 @@
 package com.example.ui.screens.detail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -68,6 +73,7 @@ fun SubstanceDetailScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OverviewTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Unit, onDeleteDose: (String) -> Unit) {
     val substance = state.substance ?: return
@@ -110,31 +116,54 @@ fun OverviewTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Uni
             color = MaterialTheme.colorScheme.tertiary
         )
 
-        Text("Recent Doses", style = MaterialTheme.typography.titleLarge)
-        val recent = state.doses.sortedByDescending { it.timestamp }.take(10)
+        Text("Recent Doses (Swipe to delete)", style = MaterialTheme.typography.titleLarge)
+        val recent = state.doses.sortedByDescending { it.timestamp }.take(15)
         if (recent.isEmpty()) {
             Text("No recent doses", fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
         } else {
             recent.forEach { dose ->
-                val varName = state.variants.find { it.id == dose.variantId }?.name ?: "Unknown"
-                GlassCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(), 
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(varName, style = MaterialTheme.typography.titleSmall)
-                            val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
-                            Text(formatter.format(java.util.Date(dose.timestamp)), style = MaterialTheme.typography.bodySmall)
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = {
+                        if (it == SwipeToDismissBoxValue.EndToStart) {
+                            onDeleteDose(dose.id)
+                            true
+                        } else false
+                    }
+                )
+                
+                SwipeToDismissBox(
+                    state = dismissState,
+                    backgroundContent = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 4.dp)
+                                .background(MaterialTheme.colorScheme.error, MaterialTheme.shapes.medium)
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.CenterEnd
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onError)
                         }
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
-                                Text("${dose.doseAmount} ${dose.unit}", fontWeight = FontWeight.Bold)
-                                Text(dose.route, style = MaterialTheme.typography.bodySmall)
+                    },
+                    enableDismissFromStartToEnd = false
+                ) {
+                    val varName = state.variants.find { it.id == dose.variantId }?.name ?: "Unknown"
+                    GlassCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(), 
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(varName, style = MaterialTheme.typography.titleSmall)
+                                val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault())
+                                Text(formatter.format(java.util.Date(dose.timestamp)), style = MaterialTheme.typography.bodySmall)
                             }
-                            IconButton(onClick = { onDeleteDose(dose.id) }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Delete Dose", tint = MaterialTheme.colorScheme.error)
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                                    Text("${dose.doseAmount} ${dose.unit}", fontWeight = FontWeight.Bold)
+                                    Text(dose.route, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }
@@ -278,6 +307,12 @@ fun AnalyticsTab(state: SubstanceDetailState, onPeriodChange: (TimePeriod) -> Un
             title = "Route of Administration",
             data = state.roaUsage,
             colorList = listOf(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.primaryContainer)
+        )
+        
+        SimpleBarChart(
+            title = "Compound Contribution (${state.substance?.defaultUnit ?: ""})",
+            data = state.compoundContribution,
+            colorList = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)
         )
         
         SimpleBarChart(

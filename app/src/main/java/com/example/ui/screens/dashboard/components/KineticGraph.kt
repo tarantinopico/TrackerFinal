@@ -22,7 +22,13 @@ import com.example.ui.screens.dashboard.KineticLine
 @Composable
 fun KineticGraph(lines: List<KineticLine>, mode: GraphMode, onModeToggle: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = androidx.compose.ui.Alignment.CenterEnd) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text(
+                "KINETIC PROFILE",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
+            )
             Text(
                 text = if(mode == GraphMode.INFLUENCE) "INFLUENCE %" else "CONCENTRATION",
                 style = MaterialTheme.typography.labelSmall,
@@ -64,7 +70,17 @@ fun KineticGraph(lines: List<KineticLine>, mode: GraphMode, onModeToggle: () -> 
                 }
                 for (i in 0..4) {
                     val v = maxVal * (i / 4f)
-                    val labelText = if (mode == GraphMode.INFLUENCE) "${v.toInt()}%" else String.format("%.1f", v)
+                    val labelText = if (mode == GraphMode.INFLUENCE) {
+                        "${v.toInt()}%"
+                    } else {
+                        if (maxVal < 1f && maxVal > 0f) {
+                            String.format("%.3f", v)
+                        } else if (maxVal < 10f) {
+                            String.format("%.1f", v)
+                        } else {
+                            v.toInt().toString()
+                        }
+                    }
                     val y = size.height - (size.height * (i / 4f))
                     // Ensure the top label is slightly pushed down to be fully visible
                     val drawY = if (i == 4) y + 10.dp.toPx() else if (i == 0) y - 2.dp.toPx() else y

@@ -110,25 +110,27 @@ class LoggerViewModel(
         _state.update { it.copy(showQuickDoseSheet = show) }
     }
     
-    fun applyQuickDose(qd: QuickDose) {
+    fun applyQuickDose(qd: QuickDose, onSuccess: () -> Unit) {
         val sub = _state.value.substances.find { it.id == qd.substanceId }
         if (sub != null) {
-            _state.update { it.copy(selectedSubstance = sub) }
             viewModelScope.launch {
                 val variants = repository.getVariantsForSubstance(sub.id).first()
-                val varnt = variants.find { it.id == qd.variantId }
-                _state.update { 
-                    it.copy(
-                        variants = variants,
-                        selectedVariant = varnt,
-                        amount = qd.defaultAmount,
-                        unit = qd.defaultUnit,
-                        route = qd.defaultRoute,
-                        manualPrice = qd.defaultPrice,
-                        showQuickDoseSheet = false
-                    )
-                }
-                updateEstimatesAndWarnings()
+                val varnt = variants.find { it.id == qd.variantId } ?: variants.firstOrNull()
+                
+                val dose = Dose(
+                    id = java.util.UUID.randomUUID().toString(),
+                    substanceId = sub.id,
+                    variantId = varnt?.id ?: "",
+                    doseAmount = qd.defaultAmount,
+                    unit = qd.defaultUnit,
+                    route = qd.defaultRoute,
+                    price = qd.defaultPrice,
+                    timestamp = _state.value.timestamp,
+                    notes = "Logged via Quick Dose"
+                )
+                repository.saveDose(dose)
+                _state.update { it.copy(showQuickDoseSheet = false) }
+                onSuccess()
             }
         }
     }

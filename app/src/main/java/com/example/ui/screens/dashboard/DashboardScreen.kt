@@ -45,8 +45,8 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = if (settings.compactMode) 12.dp else 20.dp),
-            verticalArrangement = Arrangement.spacedBy(if (settings.compactMode) 16.dp else 24.dp)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Graph
             KineticGraph(

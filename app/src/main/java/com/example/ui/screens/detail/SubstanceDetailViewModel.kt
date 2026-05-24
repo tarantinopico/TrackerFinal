@@ -17,6 +17,9 @@ enum class TimePeriod(val days: Int, val label: String) {
     DAYS_7(7, "7D"),
     DAYS_14(14, "14D"),
     MONTH_1(30, "1M"),
+    MONTH_3(90, "3M"),
+    MONTH_6(180, "6M"),
+    YEAR_1(365, "1Y"),
     ALL(-1, "ALL")
 }
 
@@ -39,6 +42,7 @@ data class SubstanceDetailState(
     val hourOfDayDist: Map<String, Float> = emptyMap(),
     val variantUsage: Map<String, Float> = emptyMap(),
     val roaUsage: Map<String, Float> = emptyMap(),
+    val compoundContribution: Map<String, Float> = emptyMap(),
     val kineticLines: List<KineticLine> = emptyList(),
     val timePeriod: TimePeriod = TimePeriod.DAYS_14,
     val spendTrend: List<TimePoint> = emptyList(),
@@ -91,6 +95,7 @@ class SubstanceDetailViewModel(
         val hod = mutableMapOf<String, Float>()
         val varUsage = mutableMapOf<String, Float>()
         val roa = mutableMapOf<String, Float>()
+        val compoundContribution = mutableMapOf<String, Float>()
         
         val cal = java.util.Calendar.getInstance()
         var earliest = Long.MAX_VALUE
@@ -150,8 +155,22 @@ class SubstanceDetailViewModel(
             hod[hLabel] = (hod[hLabel] ?: 0f) + 1f
             
             // Variant
-            val varName = variants.find { it.id == dose.variantId }?.name ?: "Unknown"
+            val variant = variants.find { it.id == dose.variantId }
+            val varName = variant?.name ?: "Unknown"
             varUsage[varName] = (varUsage[varName] ?: 0f) + 1f
+            
+            // Compound Contribution
+            if (dose.timestamp >= thresholdTime) {
+                if (variant != null && variant.ratio.isNotEmpty()) {
+                    variant.ratio.forEach { (cmpId, pct) ->
+                        val cmpName = compounds.find { it.id == cmpId }?.name ?: "Unknown"
+                        compoundContribution[cmpName] = (compoundContribution[cmpName] ?: 0f) + (dose.doseAmount * pct.toFloat())
+                    }
+                } else {
+                    val fallbackName = compounds.firstOrNull()?.name ?: substance?.name ?: "Unknown"
+                    compoundContribution[fallbackName] = (compoundContribution[fallbackName] ?: 0f) + dose.doseAmount
+                }
+            }
             
             // ROA
             roa[dose.route] = (roa[dose.route] ?: 0f) + 1f
@@ -218,6 +237,7 @@ class SubstanceDetailViewModel(
             hourOfDayDist = hod,
             variantUsage = varUsage,
             roaUsage = roa,
+            compoundContribution = compoundContribution,
             kineticLines = line,
             timePeriod = timePeriod,
             spendTrend = spendTrend,

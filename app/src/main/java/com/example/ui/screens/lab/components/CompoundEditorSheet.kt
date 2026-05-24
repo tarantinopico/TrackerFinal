@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import com.example.ui.components.GlassCard
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -145,6 +146,36 @@ fun CompoundEditorSheet(
                 }) {
                     Text("+ Add Curve Point")
                 }
+                
+                // Visual Preview
+                if (compound.curve.size >= 2) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Curve Preview", style = MaterialTheme.typography.labelMedium)
+                        GlassCard(modifier = Modifier.fillMaxWidth().height(120.dp)) {
+                        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            val sorted = compound.curve.sortedBy { it.t }
+                            if (sorted.isEmpty()) return@Canvas
+                            val minTime = sorted.first().t
+                            val maxTime = sorted.last().t
+                            val timeRange = (maxTime - minTime).takeIf { it > 0 } ?: 1
+                            val maxVal = 100f // Effect % is out of 100
+                            
+                            val path = androidx.compose.ui.graphics.Path()
+                            sorted.forEachIndexed { i, p ->
+                                val x = size.width * ((p.t - minTime).toFloat() / timeRange)
+                                val y = size.height - (size.height * (p.c / maxVal))
+                                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                            }
+                            
+                            drawPath(
+                                path = path,
+                                color = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(compound.colorHex)),
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+                            )
+                        }
+                    }
+                }
+                
             } else {
                 Text("Kinetic Profile", style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
