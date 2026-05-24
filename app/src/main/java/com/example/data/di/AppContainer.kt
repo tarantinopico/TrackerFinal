@@ -16,7 +16,7 @@ class AppContainer(private val context: Context) {
             context,
             BioTrackDatabase::class.java,
             "biotrack_database"
-        ).fallbackToDestructiveMigration().build()
+        ).fallbackToDestructiveMigration(dropAllTables = true).build()
     }
 
     val bioTrackRepository: BioTrackRepository by lazy {
