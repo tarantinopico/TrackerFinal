@@ -56,11 +56,16 @@ object PharmacokineticEngine {
             val potency = cmp.potencyMultiplier
             val effectiveAmount = baseAmountForCompound * potency
             
-            val hl = cmp.halfLifeHours?.toDouble() ?: 6.0
-            val peakMin = cmp.peakMin ?: 30
-            val peak = peakMin / 60.0
+            val concentration = if (cmp.useCurve && cmp.curve.isNotEmpty()) {
+                val dtMin = dtHours * 60.0
+                calculateCustomCurve(effectiveAmount, dtMin, cmp.curve)
+            } else {
+                val hl = cmp.halfLifeHours?.toDouble() ?: 6.0
+                val peakMin = cmp.peakMin ?: 30
+                val peak = peakMin / 60.0
+                calculateSingleCurve(effectiveAmount, dtHours, hl, peak)
+            }
             
-            val concentration = calculateSingleCurve(effectiveAmount, dtHours, hl, peak)
             CompoundLoad(cmp.id, cmp.name, cmp.colorHex, concentration)
         }
     }
@@ -74,6 +79,27 @@ object PharmacokineticEngine {
     ): Double {
         val loads = calculateCurrentLoad(dose, substance, compounds, variant, timeNow)
         return loads.sumOf { it.concentration }
+    }
+    
+    private fun calculateCustomCurve(amount: Double, dtMin: Double, curve: List<CurvePoint>): Double {
+        if (amount <= 0.0 || curve.isEmpty()) return 0.0
+        val sorted = curve.sortedBy { it.t }
+        val first = sorted.first()
+        val last = sorted.last()
+        
+        if (dtMin <= first.t) return amount * (first.c / 100.0)
+        if (dtMin >= last.t) return amount * (last.c / 100.0)
+        
+        for (i in 0 until sorted.size - 1) {
+            val p1 = sorted[i]
+            val p2 = sorted[i+1]
+            if (dtMin >= p1.t && dtMin <= p2.t) {
+                val fraction = (dtMin - p1.t) / (p2.t - p1.t)
+                val c = p1.c + (p2.c - p1.c) * fraction
+                return amount * (c / 100.0)
+            }
+        }
+        return 0.0
     }
     
     private fun calculateSingleCurve(amount: Double, dtHours: Double, halfLifeHours: Double, peakHours: Double): Double {

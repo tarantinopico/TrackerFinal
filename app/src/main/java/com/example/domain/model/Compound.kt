@@ -1,5 +1,7 @@
 package com.example.domain.model
 
+data class CurvePoint(val t: Int, val c: Float)
+
 data class Compound(
     val id: String,
     val substanceId: String,
@@ -15,6 +17,8 @@ data class Compound(
     val potencyMultiplier: Double = 1.0,
     val colorHex: String = "#FFFFFF",
     val active: Boolean = true,
+    val useCurve: Boolean = false,
+    val curve: List<CurvePoint> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

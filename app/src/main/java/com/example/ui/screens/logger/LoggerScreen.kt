@@ -26,14 +26,14 @@ fun ActiveCompoundsPreview(
     variant: Variant?
 ) {
     com.example.ui.components.GlassCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(8.dp)) {
             Text(
                 "Active Compounds Extraction", 
                 style = MaterialTheme.typography.labelSmall, 
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             
             val isMacroUnit = unit.equals("g", ignoreCase = true) || unit.equals("kg", ignoreCase = true)
             val doseMg = if (isMacroUnit) UnitConverter.toMg(amount.toDouble(), unit) else amount.toDouble()
@@ -43,7 +43,7 @@ fun ActiveCompoundsPreview(
                 val activeMg = doseMg * ratio
                 
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -54,7 +54,7 @@ fun ActiveCompoundsPreview(
                     )
                     Text(
                         "${String.format("%.2f", activeMg)} mg", 
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )

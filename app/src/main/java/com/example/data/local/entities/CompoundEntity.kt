@@ -35,6 +35,8 @@ data class CompoundEntity(
     val potencyMultiplier: Double,
     val colorHex: String,
     val active: Boolean,
+    val useCurve: Boolean,
+    val curve: String, // Stored as JSON string
     val createdAt: Long,
     val updatedAt: Long
 )

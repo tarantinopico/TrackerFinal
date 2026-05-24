@@ -12,6 +12,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.domain.model.Compound
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompoundEditorSheet(
@@ -81,29 +84,92 @@ fun CompoundEditorSheet(
                 )
             }
             
-            Text("Kinetic Profile", style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = compound.onsetMin?.toString() ?: "",
-                    onValueChange = { onUpdate(compound.copy(onsetMin = it.toIntOrNull())) },
-                    label = { Text("Onset (min)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text("Use Custom Absorption Curve", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = compound.useCurve,
+                    onCheckedChange = { onUpdate(compound.copy(useCurve = it)) }
                 )
-                OutlinedTextField(
-                    value = compound.peakMin?.toString() ?: "",
-                    onValueChange = { onUpdate(compound.copy(peakMin = it.toIntOrNull())) },
-                    label = { Text("Peak (min)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = compound.durationHours?.toString() ?: "",
-                    onValueChange = { onUpdate(compound.copy(durationHours = it.toFloatOrNull())) },
-                    label = { Text("Duration (h)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f)
-                )
+            }
+            
+            if (compound.useCurve) {
+                Text("Curve Points (Time in min, Effect %)", style = MaterialTheme.typography.labelMedium)
+                
+                compound.curve.sortedBy { it.t }.forEachIndexed { index, point ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = point.t.toString(),
+                            onValueChange = { 
+                                val newCurve = compound.curve.toMutableList()
+                                newCurve[index] = point.copy(t = it.toIntOrNull() ?: 0)
+                                onUpdate(compound.copy(curve = newCurve))
+                            },
+                            label = { Text("Time (min)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = point.c.toString(),
+                            onValueChange = { 
+                                val newCurve = compound.curve.toMutableList()
+                                newCurve[index] = point.copy(c = it.toFloatOrNull() ?: 0f)
+                                onUpdate(compound.copy(curve = newCurve))
+                            },
+                            label = { Text("Effect %") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = {
+                            val newCurve = compound.curve.toMutableList()
+                            newCurve.removeAt(index)
+                            onUpdate(compound.copy(curve = newCurve))
+                        }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                
+                TextButton(onClick = {
+                    val newCurve = compound.curve.toMutableList()
+                    val lastTime = newCurve.maxOfOrNull { it.t } ?: 0
+                    newCurve.add(com.example.domain.model.CurvePoint(lastTime + 10, 0f))
+                    onUpdate(compound.copy(curve = newCurve))
+                }) {
+                    Text("+ Add Curve Point")
+                }
+            } else {
+                Text("Kinetic Profile", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = compound.onsetMin?.toString() ?: "",
+                        onValueChange = { onUpdate(compound.copy(onsetMin = it.toIntOrNull())) },
+                        label = { Text("Onset (min)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = compound.peakMin?.toString() ?: "",
+                        onValueChange = { onUpdate(compound.copy(peakMin = it.toIntOrNull())) },
+                        label = { Text("Peak (min)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = compound.durationHours?.toString() ?: "",
+                        onValueChange = { onUpdate(compound.copy(durationHours = it.toFloatOrNull())) },
+                        label = { Text("Duration (h)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
 
             Text("Dosage Profile", style = MaterialTheme.typography.labelLarge)

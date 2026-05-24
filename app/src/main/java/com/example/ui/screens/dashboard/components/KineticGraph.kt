@@ -75,6 +75,23 @@ fun KineticGraph(lines: List<KineticLine>, mode: GraphMode, onModeToggle: () -> 
                     val drawY = if (i == 4) y + 10.dp.toPx() else if (i == 0) y - 2.dp.toPx() else y
                     drawContext.canvas.nativeCanvas.drawText(labelText, 0f, drawY, labelPaint)
                 }
+
+                // Draw X axis labels (times)
+                val xSteps = 6
+                for (i in 0..xSteps) {
+                    val timeForLabel = minTime + (timeRange * (i.toFloat() / xSteps)).toLong()
+                    val formatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                    val timeStr = formatter.format(java.util.Date(timeForLabel))
+                    
+                    val xPos = size.width * (i.toFloat() / xSteps)
+                    // Draw text label at the bottom
+                    drawContext.canvas.nativeCanvas.drawText(
+                        timeStr, 
+                        if (i == 0) xPos else if (i == xSteps) xPos - 20.dp.toPx() else xPos - 10.dp.toPx(), 
+                        size.height + 16.dp.toPx(), 
+                        labelPaint
+                    )
+                }
                 
                 lines.forEach { line ->
                     val path = Path()

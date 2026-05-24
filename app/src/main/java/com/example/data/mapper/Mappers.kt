@@ -1,4 +1,6 @@
 package com.example.data.mapper
+import org.json.JSONArray
+import org.json.JSONObject
 
 import com.example.data.local.entities.*
 import com.example.domain.model.*
@@ -17,19 +19,43 @@ fun Substance.toEntity() = SubstanceEntity(
     createdAt = createdAt, updatedAt = updatedAt
 )
 
-fun CompoundEntity.toDomain() = Compound(
-    id = id, substanceId = substanceId, name = name, halfLifeHours = halfLifeHours,
-    onsetMin = onsetMin, peakMin = peakMin, durationHours = durationHours,
-    thresholdDose = thresholdDose, commonDose = commonDose, strongDose = strongDose,
-    molecularWeight = molecularWeight, potencyMultiplier = potencyMultiplier, colorHex = colorHex, active = active, createdAt = createdAt, updatedAt = updatedAt
-)
+fun CompoundEntity.toDomain(): Compound {
+    val curveList = mutableListOf<CurvePoint>()
+    try {
+        val arr = JSONArray(curve)
+        for (i in 0 until arr.length()) {
+            val obj = arr.getJSONObject(i)
+            curveList.add(CurvePoint(obj.getInt("t"), obj.getDouble("c").toFloat()))
+        }
+    } catch(e: Exception) { e.printStackTrace() }
+    
+    return Compound(
+        id = id, substanceId = substanceId, name = name, halfLifeHours = halfLifeHours,
+        onsetMin = onsetMin, peakMin = peakMin, durationHours = durationHours,
+        thresholdDose = thresholdDose, commonDose = commonDose, strongDose = strongDose,
+        molecularWeight = molecularWeight, potencyMultiplier = potencyMultiplier, colorHex = colorHex, active = active,
+        useCurve = useCurve, curve = curveList,
+        createdAt = createdAt, updatedAt = updatedAt
+    )
+}
 
-fun Compound.toEntity() = CompoundEntity(
-    id = id, substanceId = substanceId, name = name, halfLifeHours = halfLifeHours,
-    onsetMin = onsetMin, peakMin = peakMin, durationHours = durationHours,
-    thresholdDose = thresholdDose, commonDose = commonDose, strongDose = strongDose,
-    molecularWeight = molecularWeight, potencyMultiplier = potencyMultiplier, colorHex = colorHex, active = active, createdAt = createdAt, updatedAt = updatedAt
-)
+fun Compound.toEntity(): CompoundEntity {
+    val arr = JSONArray()
+    for (pt in curve) {
+        val obj = JSONObject()
+        obj.put("t", pt.t)
+        obj.put("c", pt.c)
+        arr.put(obj)
+    }
+    return CompoundEntity(
+        id = id, substanceId = substanceId, name = name, halfLifeHours = halfLifeHours,
+        onsetMin = onsetMin, peakMin = peakMin, durationHours = durationHours,
+        thresholdDose = thresholdDose, commonDose = commonDose, strongDose = strongDose,
+        molecularWeight = molecularWeight, potencyMultiplier = potencyMultiplier, colorHex = colorHex, active = active,
+        useCurve = useCurve, curve = arr.toString(),
+        createdAt = createdAt, updatedAt = updatedAt
+    )
+}
 
 fun VariantEntity.toDomain(): Variant {
     val converters = Converters()
