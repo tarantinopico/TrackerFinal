@@ -170,47 +170,9 @@ class DashboardViewModel(
     }
     
     private fun calculateDoseConcentration(dose: Dose, sub: Substance?, compounds: List<Compound>, time: Long): Float {
-        val dtHours = (time - dose.timestamp) / 3600000.0
-        if (dtHours < 0) return 0f
-        
-        if (compounds.isEmpty()) {
-            // Fallback if no compounds exist
-            val halfLife = when (sub?.category) {
-                SubstanceCategory.STIMULANT -> 5.0
-                SubstanceCategory.DEPRESSANT -> 4.0
-                SubstanceCategory.PSYCHEDELIC -> 12.0
-                SubstanceCategory.SUPPLEMENT -> 24.0
-                else -> 6.0
-            }
-            val peak = 0.5 
-            return if (dtHours < peak) {
-                (dose.doseAmount * (dtHours / peak)).toFloat()
-            } else {
-                val postPeak = dtHours - peak
-                val decay = Math.pow(0.5, postPeak / halfLife)
-                (dose.doseAmount * decay).toFloat()
-            }
-        }
-        
-        // Sum concentrations driven by compounds. We assume equal ratio if variant isn't specified, 
-        // but since variant is in DB, we'd need variant map here. For MVP simplicity, we will split dose equally among compounds.
-        val amountPerCompound = dose.doseAmount / compounds.size
-        var totalConc = 0f
-        for(cmp in compounds) {
-            val hl = cmp.halfLifeHours?.toDouble() ?: 6.0
-            val peakMin = cmp.peakMin ?: 30
-            val peak = peakMin / 60.0
-            
-            val conc = if (dtHours < peak) {
-                if (peak == 0.0) amountPerCompound else (amountPerCompound * (dtHours / peak))
-            } else {
-                val postPeak = dtHours - peak
-                val decay = Math.pow(0.5, postPeak / hl)
-                amountPerCompound * decay
-            }
-            totalConc += conc.toFloat()
-        }
-        return totalConc
+        // Find variant if necessary, but here we don't pass variant in dashboard MVP, or we can look it up.
+        // For accurate variant ratio, Dashboard needs variants. But for MVP, pass null.
+        return com.example.domain.model.PharmacokineticEngine.calculateTotalConcentration(dose, sub, compounds, null, time).toFloat()
     }
 }
 

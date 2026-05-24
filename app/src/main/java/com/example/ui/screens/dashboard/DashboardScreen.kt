@@ -62,7 +62,7 @@ fun DashboardScreen(
             TodaySummaryCards(state = state, settings = settings)
             
             // Recent Logs
-            RecentLogWidget(logs = state.recentLogs, privacyMode = settings.privacyMode)
+            RecentLogWidget(logs = state.recentLogs, privacyMode = settings.privacyMode, compactMode = settings.compactMode)
             
             Spacer(modifier = Modifier.height(60.dp)) // Nav bar padding
         }

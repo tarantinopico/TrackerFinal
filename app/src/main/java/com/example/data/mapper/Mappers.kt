@@ -21,14 +21,14 @@ fun CompoundEntity.toDomain() = Compound(
     id = id, substanceId = substanceId, name = name, halfLifeHours = halfLifeHours,
     onsetMin = onsetMin, peakMin = peakMin, durationHours = durationHours,
     thresholdDose = thresholdDose, commonDose = commonDose, strongDose = strongDose,
-    molecularWeight = molecularWeight, active = active, createdAt = createdAt, updatedAt = updatedAt
+    molecularWeight = molecularWeight, potencyMultiplier = potencyMultiplier, colorHex = colorHex, active = active, createdAt = createdAt, updatedAt = updatedAt
 )
 
 fun Compound.toEntity() = CompoundEntity(
     id = id, substanceId = substanceId, name = name, halfLifeHours = halfLifeHours,
     onsetMin = onsetMin, peakMin = peakMin, durationHours = durationHours,
     thresholdDose = thresholdDose, commonDose = commonDose, strongDose = strongDose,
-    molecularWeight = molecularWeight, active = active, createdAt = createdAt, updatedAt = updatedAt
+    molecularWeight = molecularWeight, potencyMultiplier = potencyMultiplier, colorHex = colorHex, active = active, createdAt = createdAt, updatedAt = updatedAt
 )
 
 fun VariantEntity.toDomain(): Variant {
@@ -36,7 +36,7 @@ fun VariantEntity.toDomain(): Variant {
     return Variant(
         id = id, substanceId = substanceId, name = name, colorHex = colorHex,
         pricePerUnit = pricePerUnit, unitLabel = unitLabel,
-        ratio = converters.toStringMap(ratioJson),
+        ratio = converters.toStringDoubleMap(ratioJson),
         roaDefault = roaDefault, active = active, createdAt = createdAt, updatedAt = updatedAt
     )
 }
@@ -46,7 +46,7 @@ fun Variant.toEntity(): VariantEntity {
     return VariantEntity(
         id = id, substanceId = substanceId, name = name, colorHex = colorHex,
         pricePerUnit = pricePerUnit, unitLabel = unitLabel,
-        ratioJson = converters.fromStringMap(ratio),
+        ratioJson = converters.fromStringDoubleMap(ratio),
         roaDefault = roaDefault, active = active, createdAt = createdAt, updatedAt = updatedAt
     )
 }

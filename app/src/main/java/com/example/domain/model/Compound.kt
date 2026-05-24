@@ -12,6 +12,8 @@ data class Compound(
     val commonDose: Float? = null,
     val strongDose: Float? = null,
     val molecularWeight: Float? = null,
+    val potencyMultiplier: Double = 1.0,
+    val colorHex: String = "#FFFFFF",
     val active: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()

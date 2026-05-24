@@ -98,21 +98,22 @@ fun VariantEditorSheet(
                 Text("No compounds defined for this substance yet.", fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
             } else {
                 availableCompounds.forEach { cmp ->
-                    val currentRatio = (variant.ratio[cmp.id] ?: 0f) * 100f
+                    val currentRatioDouble = (variant.ratio[cmp.id] ?: 0.0) * 100.0
+                    val currentRatioFloat = currentRatioDouble.toFloat()
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(cmp.name)
-                            Text("${currentRatio.roundToInt()} %")
+                            Text("${currentRatioDouble.roundToInt()} %")
                         }
                         Slider(
-                            value = currentRatio,
+                            value = currentRatioFloat,
                             onValueChange = { pct ->
                                 val newRatioMap = variant.ratio.toMutableMap()
-                                newRatioMap[cmp.id] = pct / 100f
+                                newRatioMap[cmp.id] = (pct / 100f).toDouble()
                                 onUpdate(variant.copy(ratio = newRatioMap))
                             },
                             valueRange = 0f..100f,
-                            steps = 100
+                            steps = 1000 // 1000 steps for 0.1% precision, wait, slider does floats anyway
                         )
                     }
                 }

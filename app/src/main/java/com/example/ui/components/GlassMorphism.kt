@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
+    padding: androidx.compose.ui.unit.Dp = 16.dp,
     content: @Composable () -> Unit
 ) {
     val isDark = isSystemInDarkTheme() // Or read from theme mode if explicitly passed, but MaterialTheme colors do the job
@@ -50,7 +51,7 @@ fun GlassCard(
                 shape = MaterialTheme.shapes.large
             )
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-            .padding(16.dp)
+            .padding(padding)
     ) {
         content()
     }

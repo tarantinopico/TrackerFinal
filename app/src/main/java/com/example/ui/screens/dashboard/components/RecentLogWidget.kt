@@ -18,9 +18,9 @@ import com.example.ui.components.GlassCard
 import com.example.ui.components.SectionHeader
 
 @Composable
-fun RecentLogWidget(logs: List<Pair<Dose, Substance>>, privacyMode: Boolean) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(title = "Recent Logs", icon = Icons.Default.History, modifier = Modifier.padding(bottom = 8.dp))
+fun RecentLogWidget(logs: List<Pair<Dose, Substance>>, privacyMode: Boolean, compactMode: Boolean = false) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (compactMode) 4.dp else 8.dp)) {
+        SectionHeader(title = "Recent Logs", icon = Icons.Default.History, modifier = Modifier.padding(bottom = if (compactMode) 4.dp else 8.dp))
         
         if (logs.isEmpty()) {
             GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -28,14 +28,14 @@ fun RecentLogWidget(logs: List<Pair<Dose, Substance>>, privacyMode: Boolean) {
             }
         } else {
             logs.forEach { (dose, sub) ->
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(modifier = Modifier.fillMaxWidth(), padding = if (compactMode) 8.dp else 16.dp) {
                     Row(
                         modifier = Modifier.fillMaxWidth(), 
                         horizontalArrangement = Arrangement.SpaceBetween, 
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(sub.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(if (privacyMode) "Hidden" else sub.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text(
                                 SimpleDateFormat("HH:mm - dd.MM", Locale.getDefault()).format(Date(dose.timestamp)), 
                                 style = MaterialTheme.typography.bodySmall, 

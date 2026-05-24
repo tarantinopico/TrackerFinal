@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.domain.model.*
 import com.example.domain.repository.BioTrackRepository
+import com.example.domain.analytics.GlobalAnalytics
+import com.example.domain.analytics.FinanceAnalytics
+import com.example.domain.analytics.AnalyticsEngine
 import kotlinx.coroutines.flow.*
 
 data class AnalyticsState(
@@ -14,7 +17,9 @@ data class AnalyticsState(
     val variants: List<Variant> = emptyList(),
     val settings: AppSettings? = null,
     val selectedSubsubsection: AnalyticsSection = AnalyticsSection.SUMMARY,
-    val detailSubstanceId: String? = null
+    val detailSubstanceId: String? = null,
+    val globalAnalytics: GlobalAnalytics? = null,
+    val financeAnalytics: FinanceAnalytics? = null
 )
 
 enum class AnalyticsSection {
@@ -33,6 +38,9 @@ class AnalyticsViewModel(private val repository: BioTrackRepository) : ViewModel
             repository.getAllVariants(),
             repository.getSettings()
         ) { subs, dses, cmps, vts, setts ->
+            val global = AnalyticsEngine.computeGlobalAnalytics(dses, subs, vts, setts)
+            val finance = AnalyticsEngine.computeFinanceAnalytics(dses, subs, vts, setts)
+            
             AnalyticsState(
                 substances = subs,
                 doses = dses,
@@ -40,7 +48,9 @@ class AnalyticsViewModel(private val repository: BioTrackRepository) : ViewModel
                 variants = vts,
                 settings = setts,
                 selectedSubsubsection = _state.value.selectedSubsubsection,
-                detailSubstanceId = _state.value.detailSubstanceId
+                detailSubstanceId = _state.value.detailSubstanceId,
+                globalAnalytics = global,
+                financeAnalytics = finance
             )
         }.onEach { s ->
             _state.value = s

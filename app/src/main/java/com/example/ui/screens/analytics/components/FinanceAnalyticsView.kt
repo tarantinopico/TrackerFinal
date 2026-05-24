@@ -24,17 +24,8 @@ fun FinanceAnalyticsView(state: AnalyticsState, privacyMode: Boolean, shouldHide
         }
         return
     }
-    
-    if (state.doses.isEmpty()) {
-        Text("No data available.")
-        return
-    }
 
-    val currency = state.settings?.currency ?: "USD"
-    val totalSpent = state.doses.sumOf { it.price?.toDouble() ?: 0.0 }
-    val spentBySubstance = state.doses.groupBy { it.substanceId }
-        .mapValues { it.value.sumOf { d -> d.price?.toDouble() ?: 0.0 } }
-        .toList().sortedByDescending { it.second }
+    val finance = state.financeAnalytics ?: return
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -42,30 +33,45 @@ fun FinanceAnalyticsView(state: AnalyticsState, privacyMode: Boolean, shouldHide
     ) {
         GlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Total Spending", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-                
+                Text("CUMULATIVE SPENDING", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
-                    text = if (privacyMode) "*** $currency" else String.format("%.2f %s", totalSpent, currency),
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = if (privacyMode) "***" else String.format("%s%.2f", finance.currencySymbol, finance.cumulativeSpend),
+                    style = MaterialTheme.typography.displayMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        GlassCard(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Spending by Substance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                spentBySubstance.forEachIndexed { i, (subId, cost) ->
-                    val name = state.substances.find { it.id == subId }?.name ?: "Unknown"
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(if (privacyMode) "Hidden" else name, fontWeight = FontWeight.Bold)
-                        Text(if (privacyMode) "***" else String.format("%.2f %s", cost, currency))
+        if (finance.spendTrend.isNotEmpty()) {
+            GlassCard {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Spend Trend", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (!privacyMode) {
+                        SimpleLineChart(
+                            dataPoints = finance.spendTrend.map { it.second },
+                            modifier = Modifier.fillMaxWidth().height(150.dp)
+                        )
+                    } else {
+                        Text("Hidden", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+
+        if (finance.spendBySubstance.isNotEmpty()) {
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Spending by Substance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    if (!privacyMode) {
+                        SimpleBarChart(
+                            data = finance.spendBySubstance.map { it.key to it.value }.sortedByDescending { it.second },
+                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                        )
+                    } else {
+                         Text("Hidden", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

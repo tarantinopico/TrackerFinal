@@ -21,7 +21,7 @@ fun CategoryAnalytics(state: AnalyticsState, privacyMode: Boolean) {
 
     val categoryCounts = state.doses.mapNotNull { dose ->
         state.substances.find { it.id == dose.substanceId }?.category?.name
-    }.groupBy { it }.mapValues { it.value.size }.toList().sortedByDescending { it.second }
+    }.groupBy { it }.mapValues { it.value.size.toFloat() }.toList().sortedByDescending { it.second }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -33,14 +33,13 @@ fun CategoryAnalytics(state: AnalyticsState, privacyMode: Boolean) {
                     Text("Top Mechanisms / Categories", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    categoryCounts.forEachIndexed { i, (cat, count) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), 
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("${i + 1}. $cat", fontWeight = FontWeight.Bold)
-                            Text(if (privacyMode) "***" else "$count logs")
-                        }
+                    if (!privacyMode) {
+                        SimpleBarChart(
+                            data = categoryCounts,
+                            modifier = Modifier.fillMaxWidth().height(200.dp)
+                        )
+                    } else {
+                        Text("Hidden", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

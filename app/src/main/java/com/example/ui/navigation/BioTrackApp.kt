@@ -102,10 +102,12 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
                com.example.ui.screens.settings.SettingsScreen(viewModel = settingsViewModel)
             }
             composable(Routes.SUBSTANCE_DETAIL) { backStackEntry ->
-                val id = backStackEntry.arguments?.getString("substanceId")
-                val substance = substances.find { it.id == id }
+                val id = backStackEntry.arguments?.getString("substanceId") ?: return@composable
+                val detailViewModel: com.example.ui.screens.detail.SubstanceDetailViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.example.ui.screens.detail.SubstanceDetailViewModelFactory(viewModel.repository, id)
+                )
                 com.example.ui.screens.detail.SubstanceDetailScreen(
-                    substance = substance,
+                    viewModel = detailViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }

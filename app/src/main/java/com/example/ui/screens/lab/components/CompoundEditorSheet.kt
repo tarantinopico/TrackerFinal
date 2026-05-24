@@ -65,7 +65,23 @@ fun CompoundEditorSheet(
                 )
             }
             
-            Text("Kinetics Profile", style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = compound.potencyMultiplier.toString(),
+                    onValueChange = { onUpdate(compound.copy(potencyMultiplier = it.toDoubleOrNull() ?: 1.0)) },
+                    label = { Text("Potency Multiplier (1.0 = base)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = compound.colorHex,
+                    onValueChange = { onUpdate(compound.copy(colorHex = it)) },
+                    label = { Text("Color Hex") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            Text("Kinetic Profile", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = compound.onsetMin?.toString() ?: "",

@@ -32,6 +32,8 @@ data class CompoundEntity(
     val commonDose: Float?,
     val strongDose: Float?,
     val molecularWeight: Float?,
+    val potencyMultiplier: Double,
+    val colorHex: String,
     val active: Boolean,
     val createdAt: Long,
     val updatedAt: Long
