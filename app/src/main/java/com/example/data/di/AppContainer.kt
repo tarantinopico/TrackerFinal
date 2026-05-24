@@ -22,4 +22,8 @@ class AppContainer(private val context: Context) {
     val bioTrackRepository: BioTrackRepository by lazy {
         BioTrackRepositoryImpl(database)
     }
+
+    val backupManager: com.example.data.backup.BackupManager by lazy {
+        com.example.data.backup.BackupManager(context, bioTrackRepository, database)
+    }
 }

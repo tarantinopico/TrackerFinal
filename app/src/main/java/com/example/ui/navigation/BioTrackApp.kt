@@ -91,14 +91,15 @@ fun BioTrackApp(viewModel: BioTrackViewModel) {
                 com.example.ui.screens.analytics.AnalyticsScreen(viewModel = analyticsViewModel)
             }
             composable(Routes.SETTINGS) {
-               com.example.ui.screens.settings.SettingsScreen(
-                   settings = settings,
-                   substances = substances,
-                   logs = logs,
-                   onTogglePrivacy = { viewModel.togglePrivacyMode() },
-                   onUpdateAccent = { accent -> viewModel.updateAccentPalette(accent) },
-                   onUpdateTheme = { theme -> viewModel.updateThemeMode(theme) }
+               val context = androidx.compose.ui.platform.LocalContext.current
+               val appContainer = (context.applicationContext as com.example.BioTrackApplication).container
+               val settingsViewModel: com.example.ui.screens.settings.SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                   factory = com.example.ui.screens.settings.SettingsViewModelFactory(
+                       repository = viewModel.repository,
+                       backupManager = appContainer.backupManager
+                   )
                )
+               com.example.ui.screens.settings.SettingsScreen(viewModel = settingsViewModel)
             }
             composable(Routes.SUBSTANCE_DETAIL) { backStackEntry ->
                 val id = backStackEntry.arguments?.getString("substanceId")
